@@ -1,5 +1,8 @@
 import { useMemo, useState } from "react";
 import { useAuth, type UserRole } from "./hooks/useAuth";
+import { useProducts, useCategories, deleteProduct, type Product as ProductType, type Category } from "./hooks/useProducts";
+import { useWishlist } from "./hooks/useWishlist";
+import { useCart } from "./hooks/useCart";
 
 type Role = "buyer" | "seller";
 type Page =
@@ -22,152 +25,23 @@ type Page =
   | "forgot";
 
 type Product = {
-  id: number;
+  id: string;
+  seller_id: string;
   name: string;
   price: number;
-  category: string;
+  category_id: string | null;
+  category_name?: string;
   condition: "Mint" | "Excellent" | "Good" | "Fair";
-  year: string;
-  seller: string;
+  year: string | null;
   verified: string;
   stock: number;
-  image: string;
-  description: string;
+  description: string | null;
+  images: string[];
+  status: "active" | "draft" | "sold";
+  seller_name?: string;
+  created_at: string;
+  updated_at: string;
 };
-
-const products: Product[] = [
-  {
-    id: 1,
-    name: "Walnut Turntable",
-    price: 285,
-    category: "Vintage Electronics",
-    condition: "Excellent",
-    year: "1968",
-    seller: "Found & Form",
-    verified: "Authenticity checked",
-    stock: 1,
-    image:
-      "https://images.unsplash.com/photo-1790700461847-6e97554b257d?auto=format&fit=crop&w=1000&q=85",
-    description:
-      "A beautifully preserved portable turntable with its original walnut case. Fully serviced and tested, with a warm, rich sound.",
-  },
-  {
-    id: 2,
-    name: "Mechanical Watch",
-    price: 420,
-    category: "Collectible Items",
-    condition: "Excellent",
-    year: "1956",
-    seller: "Old Soul Studio",
-    verified: "Verified",
-    stock: 1,
-    image:
-      "https://images.unsplash.com/photo-1528740030968-fd61f692a670?auto=format&fit=crop&w=1000&q=85",
-    description:
-      "Hand-wound mid-century timepiece with a crisp ivory dial and original case. Recently inspected by a specialist.",
-  },
-  {
-    id: 3,
-    name: "35mm Rangefinder",
-    price: 195,
-    category: "Vintage Electronics",
-    condition: "Good",
-    year: "1972",
-    seller: "Archive Camera Co.",
-    verified: "Condition verified",
-    stock: 2,
-    image:
-      "https://images.unsplash.com/photo-1577593641419-f2522bec16e5?auto=format&fit=crop&w=1000&q=85",
-    description:
-      "A characterful 35mm camera with manual controls and a clear viewfinder. Shutter and light meter are working.",
-  },
-  {
-    id: 4,
-    name: "Remington Typewriter",
-    price: 340,
-    category: "Memorabilia",
-    condition: "Excellent",
-    year: "1949",
-    seller: "Paper & Patina",
-    verified: "Authenticity checked",
-    stock: 1,
-    image:
-      "https://images.unsplash.com/photo-1579348444697-c03bb59b4324?auto=format&fit=crop&w=1000&q=85",
-    description:
-      "A striking black Remington portable typewriter. Clean keys, smooth carriage and a newly fitted ribbon.",
-  },
-  {
-    id: 5,
-    name: "Porcelain Story Doll",
-    price: 125,
-    category: "Classic Toys",
-    condition: "Good",
-    year: "1980s",
-    seller: "The Little Cabinet",
-    verified: "Verified",
-    stock: 1,
-    image:
-      "https://images.unsplash.com/photo-1659707751973-1e6e905071af?auto=format&fit=crop&w=1000&q=85",
-    description:
-      "A delicate porcelain doll in original handmade dress, complete with stand and provenance card.",
-  },
-  {
-    id: 6,
-    name: "Silver Stereo Receiver",
-    price: 560,
-    category: "Vintage Electronics",
-    condition: "Mint",
-    year: "1977",
-    seller: "Found & Form",
-    verified: "Condition verified",
-    stock: 1,
-    image:
-      "https://images.unsplash.com/photo-1623503664086-475867ec20b3?auto=format&fit=crop&w=1000&q=85",
-    description:
-      "A pristine silver-face stereo receiver with original knobs, warm illumination and a complete service record.",
-  },
-  {
-    id: 7,
-    name: "Collector's Camera Set",
-    price: 230,
-    category: "Collectible Items",
-    condition: "Good",
-    year: "1960–75",
-    seller: "Archive Camera Co.",
-    verified: "Verified",
-    stock: 3,
-    image:
-      "https://images.unsplash.com/photo-1575449836831-f694fb282897?auto=format&fit=crop&w=1000&q=85",
-    description:
-      "A display-ready selection of film cameras chosen for their design, patina and period character.",
-  },
-  {
-    id: 8,
-    name: "Hand-painted Figurines",
-    price: 92,
-    category: "Home Decor",
-    condition: "Excellent",
-    year: "1970s",
-    seller: "The Little Cabinet",
-    verified: "Authenticity checked",
-    stock: 4,
-    image:
-      "https://images.unsplash.com/photo-1739133978504-6f241f3db3a9?auto=format&fit=crop&w=1000&q=85",
-    description:
-      "A joyful pair of hand-painted ceramic figurines, sourced from a private European collection.",
-  },
-];
-
-const categories = [
-  ["Vinyl Records", "02"],
-  ["Classic Toys", "11"],
-  ["Retro Fashion", "16"],
-  ["Old Banknotes", "08"],
-  ["Vintage Electronics", "24"],
-  ["Collectibles", "31"],
-  ["Memorabilia", "14"],
-  ["Home Decor", "19"],
-];
 
 const iconPaths: Record<string, React.ReactNode> = {
   menu: <path d="M4 7h16M4 12h16M4 17h16" />,
@@ -229,7 +103,7 @@ function ProductCard({
   return (
     <article className="product-card">
       <div className="product-image" onClick={onOpen}>
-        <img src={product.image} alt={product.name} />
+        <img src={product.images?.[0] || ''} alt={product.name} />
         <button
           className={`favorite-button ${favorite ? "active" : ""}`}
           onClick={(event) => {
@@ -243,7 +117,7 @@ function ProductCard({
         <span className="condition-chip">{product.condition}</span>
       </div>
       <button className="product-copy" onClick={onOpen}>
-        <div className="product-meta">{product.category} · {product.year}</div>
+        <div className="product-meta">{product.category_name || 'Uncategorized'} · {product.year || 'Unknown'}</div>
         <h3>{product.name}</h3>
         <div className="product-bottom">
           <strong>{money(product.price)}</strong>
@@ -310,7 +184,61 @@ function Header({
   );
 }
 
-function Home({ navigate, favorites, toggleFavorite }: { navigate: (page: Page, product?: Product) => void; favorites: number[]; toggleFavorite: (id: number) => void }) {
+function Home({ navigate, favorites, toggleFavorite, products, categories, loading, error }: { navigate: (page: Page, product?: Product) => void; favorites: string[]; toggleFavorite: (id: string) => void; products: Product[]; categories: Category[]; loading: boolean; error: Error | null }) {
+  if (loading) {
+    return (
+      <>
+        <section className="hero">
+          <div className="hero-content">
+            <span className="eyebrow">Objects worth keeping</span>
+            <h1>Find something<br /><em>with a story.</em></h1>
+            <p>Discover authenticated vintage pieces from trusted independent sellers, each chosen for its craftsmanship, character and history.</p>
+            <div className="hero-actions">
+              <button className="button primary" onClick={() => navigate("shop")}>Explore the collection <Icon name="arrow" /></button>
+            </div>
+            <div className="hero-trust" />
+          </div>
+          <div className="hero-visual">
+            <img src="https://images.unsplash.com/photo-1769647097480-84d4d8c1d501?auto=format&fit=crop&w=1200&q=88" alt="Curated vintage objects" />
+            <div className="hero-note" />
+            <div className="round-stamp">AUTHENTIC • TIMELESS • FOUND •</div>
+          </div>
+        </section>
+        <section className="page-section">
+          <SectionTitle eyebrow="Freshly found" title="New arrivals" />
+          <p>Loading products...</p>
+        </section>
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <section className="hero">
+          <div className="hero-content">
+            <span className="eyebrow">Objects worth keeping</span>
+            <h1>Find something<br /><em>with a story.</em></h1>
+            <p>Discover authenticated vintage pieces from trusted independent sellers, each chosen for its craftsmanship, character and history.</p>
+            <div className="hero-actions">
+              <button className="button primary" onClick={() => navigate("shop")}>Explore the collection <Icon name="arrow" /></button>
+            </div>
+            <div className="hero-trust" />
+          </div>
+          <div className="hero-visual">
+            <img src="https://images.unsplash.com/photo-1769647097480-84d4d8c1d501?auto=format&fit=crop&w=1200&q=88" alt="Curated vintage objects" />
+            <div className="hero-note" />
+            <div className="round-stamp">AUTHENTIC • TIMELESS • FOUND •</div>
+          </div>
+        </section>
+        <section className="page-section">
+          <SectionTitle eyebrow="Freshly found" title="New arrivals" />
+          <p>Error loading products: {error.message}</p>
+        </section>
+      </>
+    );
+  }
+
   return (
     <>
       <section className="hero">
@@ -342,9 +270,9 @@ function Home({ navigate, favorites, toggleFavorite }: { navigate: (page: Page, 
       <section className="category-section">
         <SectionTitle eyebrow="Browse the archive" title="Shop by collection" />
         <div className="category-grid">
-          {categories.map(([name, count], index) => (
-            <button key={name} className={`category-card c${index}`} onClick={() => navigate("shop")}>
-              <span>{count} pieces</span><strong>{name}</strong><Icon name="arrow" />
+          {categories.map((cat, index) => (
+            <button key={cat.id} className={`category-card c${index % 8}`} onClick={() => navigate("shop")}>
+              <span>Browse</span><strong>{cat.name}</strong><Icon name="arrow" />
             </button>
           ))}
         </div>
@@ -367,7 +295,7 @@ function Home({ navigate, favorites, toggleFavorite }: { navigate: (page: Page, 
   );
 }
 
-function Shop({ navigate, favorites, toggleFavorite }: { navigate: (page: Page, product?: Product) => void; favorites: number[]; toggleFavorite: (id: number) => void }) {
+function Shop({ navigate, favorites, toggleFavorite, products, categories, loading, error }: { navigate: (page: Page, product?: Product) => void; favorites: string[]; toggleFavorite: (id: string) => void; products: Product[]; categories: Category[]; loading: boolean; error: Error | null }) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All categories");
   const [condition, setCondition] = useState("All conditions");
@@ -375,13 +303,37 @@ function Shop({ navigate, favorites, toggleFavorite }: { navigate: (page: Page, 
   const filtered = useMemo(() => {
     let items = products.filter((product) =>
       product.name.toLowerCase().includes(search.toLowerCase()) &&
-      (category === "All categories" || product.category === category) &&
+      (category === "All categories" || product.category_name === category) &&
       (condition === "All conditions" || product.condition === condition)
     );
     if (sort === "Price: low to high") items = [...items].sort((a, b) => a.price - b.price);
     if (sort === "Price: high to low") items = [...items].sort((a, b) => b.price - a.price);
     return items;
-  }, [search, category, condition, sort]);
+  }, [search, category, condition, sort, products]);
+
+  if (loading) {
+    return (
+      <main className="inner-page">
+        <div className="page-intro">
+          <span className="eyebrow">The collection</span>
+          <h1>Pieces with a past,<br /><em>ready for what's next.</em></h1>
+          <p>Loading...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="inner-page">
+        <div className="page-intro">
+          <span className="eyebrow">The collection</span>
+          <h1>Pieces with a past,<br /><em>ready for what's next.</em></h1>
+          <p>Error loading products: {error.message}</p>
+        </div>
+      </main>
+    );
+  }
   return (
     <main className="inner-page">
       <div className="page-intro">
@@ -392,7 +344,7 @@ function Shop({ navigate, favorites, toggleFavorite }: { navigate: (page: Page, 
       <div className="shop-tools">
         <label className="search-field"><Icon name="search" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search vintage pieces..." /></label>
         <select value={category} onChange={(e) => setCategory(e.target.value)}>
-          <option>All categories</option>{[...new Set(products.map((p) => p.category))].map((item) => <option key={item}>{item}</option>)}
+          <option>All categories</option>{categories.map((cat) => <option key={cat.id}>{cat.name}</option>)}
         </select>
         <select value={condition} onChange={(e) => setCondition(e.target.value)}>
           <option>All conditions</option><option>Mint</option><option>Excellent</option><option>Good</option><option>Fair</option>
@@ -415,11 +367,11 @@ function ProductDetail({ product, favorite, toggleFavorite, addToCart, navigate 
       <button className="back-link" onClick={() => navigate("shop")}>← Back to collection</button>
       <div className="detail-grid">
         <div className="detail-gallery">
-          <div className="main-image"><img src={product.image} alt={product.name} /><span className="image-counter">1 / 4</span></div>
-          <div className="thumbnails">{[1, 2, 3].map((n) => <button key={n}><img src={`${product.image}&sat=${100 - n * 12}`} alt="" /></button>)}</div>
+          <div className="main-image"><img src={product.images?.[0] || ''} alt={product.name} /><span className="image-counter">1 / {product.images?.length || 1}</span></div>
+          <div className="thumbnails">{(product.images?.slice(1, 4) || []).map((img, idx) => <button key={idx}><img src={img} alt="" /></button>)}</div>
         </div>
         <div className="detail-copy">
-          <div className="detail-topline"><span>{product.category} · {product.year}</span><button onClick={toggleFavorite}><Icon name="heart" filled={favorite} /> {favorite ? "Saved" : "Save"}</button></div>
+          <div className="detail-topline"><span>{product.category_name || 'Uncategorized'} · {product.year || 'Unknown'}</span><button onClick={toggleFavorite}><Icon name="heart" filled={favorite} /> {favorite ? "Saved" : "Save"}</button></div>
           <h1>{product.name}</h1>
           <div className="detail-price">{money(product.price)}</div>
           <div className="badge-row"><Badge>{product.verified}</Badge><Badge>{product.condition} condition</Badge></div>
@@ -430,14 +382,14 @@ function ProductDetail({ product, favorite, toggleFavorite, addToCart, navigate 
             <p>Carefully inspected. Light signs of age are visible and consistent with the piece’s history.</p>
           </div>
           <dl className="product-specs">
-            <div><dt>Era / year</dt><dd>{product.year}</dd></div><div><dt>Category</dt><dd>{product.category}</dd></div><div><dt>Ships from</dt><dd>Brooklyn, New York</dd></div><div><dt>Availability</dt><dd>Only {product.stock} available</dd></div>
+            <div><dt>Era / year</dt><dd>{product.year || 'Unknown'}</dd></div><div><dt>Category</dt><dd>{product.category_name || 'Uncategorized'}</dd></div><div><dt>Ships from</dt><dd>Brooklyn, New York</dd></div><div><dt>Availability</dt><dd>Only {product.stock} available</dd></div>
           </dl>
           <div className="purchase-actions">
             <button className="button primary" onClick={addToCart}>Add to cart <Icon name="bag" /></button>
             <button className="button outline" onClick={() => { addToCart(); navigate("checkout"); }}>Buy it now</button>
           </div>
           <div className="seller-card">
-            <div className="avatar">F</div><div><small>Sold by</small><strong>{product.seller} <Icon name="check" size={14} /></strong><span>Trusted seller · 98% positive</span></div><button>View shop</button>
+            <div className="avatar">{product.seller_name?.[0] || 'S'}</div><div><small>Sold by</small><strong>{product.seller_name || 'Seller'} <Icon name="check" size={14} /></strong><span>Trusted seller · 98% positive</span></div><button>View shop</button>
           </div>
         </div>
       </div>
@@ -449,7 +401,7 @@ function ProductDetail({ product, favorite, toggleFavorite, addToCart, navigate 
   );
 }
 
-function Cart({ items, remove, navigate }: { items: Product[]; remove: (id: number) => void; navigate: (page: Page) => void }) {
+function Cart({ items, remove, navigate }: { items: Product[]; remove: (id: string) => void; navigate: (page: Page) => void }) {
   const subtotal = items.reduce((sum, item) => sum + item.price, 0);
   return (
     <main className="inner-page narrow">
@@ -459,7 +411,7 @@ function Cart({ items, remove, navigate }: { items: Product[]; remove: (id: numb
       ) : (
         <div className="cart-layout">
           <div className="cart-list">
-            {items.map((item) => <div className="cart-item" key={item.id}><img src={item.image} alt={item.name} /><div><span>{item.category}</span><h3>{item.name}</h3><Badge>{item.condition}</Badge><button onClick={() => remove(item.id)}><Icon name="trash" size={16} /> Remove</button></div><strong>{money(item.price)}</strong></div>)}
+            {items.map((item) => <div className="cart-item" key={item.id}><img src={item.images?.[0] || ''} alt={item.name} /><div><span>{item.category_name || 'Uncategorized'}</span><h3>{item.name}</h3><Badge>{item.condition}</Badge><button onClick={() => remove(item.id)}><Icon name="trash" size={16} /> Remove</button></div><strong>{money(item.price)}</strong></div>)}
           </div>
           <aside className="summary-card"><h2>Order summary</h2><div><span>Subtotal</span><strong>{money(subtotal)}</strong></div><div><span>Insured shipping</span><strong>{subtotal >= 500 ? "Complimentary" : "$24"}</strong></div><div><span>Estimated tax</span><span>Calculated at checkout</span></div><hr /><div className="total"><span>Total</span><strong>{money(subtotal + (subtotal >= 500 ? 0 : 24))}</strong></div><button className="button primary" onClick={() => navigate("checkout")}>Proceed to checkout <Icon name="arrow" /></button><small><Icon name="shield" size={14} /> Protected purchase guarantee</small></aside>
         </div>
@@ -492,7 +444,7 @@ function Checkout({ items, navigate }: { items: Product[]; navigate: (page: Page
       </div>
       <aside className="checkout-summary">
         <h2>Your order</h2>
-        {items.map((item) => <div className="checkout-item" key={item.id}><img src={item.image} alt="" /><div><strong>{item.name}</strong><span>{item.condition} · Qty 1</span></div><b>{money(item.price)}</b></div>)}
+        {items.map((item) => <div className="checkout-item" key={item.id}><img src={item.images?.[0] || ''} alt="" /><div><strong>{item.name}</strong><span>{item.condition} · Qty 1</span></div><b>{money(item.price)}</b></div>)}
         <hr /><div><span>Subtotal</span><strong>{money(items.reduce((sum, item) => sum + item.price, 0))}</strong></div><div><span>Shipping</span><strong>{total > 500 ? "Complimentary" : "$24"}</strong></div><div className="total"><span>Total</span><strong>{money(total)}</strong></div>
         <p><Icon name="shield" /> Every order is protected by our authenticity and condition guarantee.</p>
       </aside>
@@ -545,7 +497,7 @@ function Profile({ seller = false, navigate, onLogout }: { seller?: boolean; nav
   );
 }
 
-function Dashboard({ navigate }: { navigate: (page: Page) => void }) {
+function Dashboard({ navigate, products, loading }: { navigate: (page: Page) => void; products: Product[]; loading: boolean }) {
   const stats = [["Total products", "48", "+4 this month", "box"], ["Active listings", "41", "85% of inventory", "bag"], ["Items sold", "126", "+12 this month", "check"], ["Total sales", "$18.4k", "+18.2% this month", "chart"]];
   return (
     <main className="inner-page">
@@ -553,7 +505,7 @@ function Dashboard({ navigate }: { navigate: (page: Page) => void }) {
       <div className="stats-grid">{stats.map(([label, value, note, icon]) => <div className="stat-card" key={label}><span><Icon name={icon} /></span><small>{label}</small><strong>{value}</strong><p>{note}</p></div>)}</div>
       <div className="dashboard-grid">
         <div className="table-card"><div className="panel-heading"><h2>Recent orders</h2><button className="text-link" onClick={() => navigate("seller-orders")}>View all <Icon name="arrow" /></button></div>{orderData.slice(0, 3).map((order) => <div className="recent-row" key={order[0]}><div className="avatar small">{order[1][0]}</div><div><strong>{order[1]}</strong><span>{order[0]} · {order[2]}</span></div><b>{order[3]}</b><i className={`status ${order[4].toLowerCase()}`}>{order[4]}</i></div>)}</div>
-        <div className="table-card"><div className="panel-heading"><h2>Recent listings</h2><button className="text-link" onClick={() => navigate("products")}>Manage <Icon name="arrow" /></button></div>{products.slice(0, 3).map((product) => <div className="recent-row" key={product.id}><img src={product.image} alt="" /><div><strong>{product.name}</strong><span>{product.condition} · Stock {product.stock}</span></div><b>{money(product.price)}</b></div>)}</div>
+        <div className="table-card"><div className="panel-heading"><h2>Recent listings</h2><button className="text-link" onClick={() => navigate("products")}>Manage <Icon name="arrow" /></button></div>{loading ? <p>Loading...</p> : products.slice(0, 3).map((product) => <div className="recent-row" key={product.id}><img src={product.images?.[0] || ''} alt="" /><div><strong>{product.name}</strong><span>{product.condition} · Stock {product.stock}</span></div><b>{money(product.price)}</b></div>)}</div>
       </div>
       <div className="seller-tip"><Icon name="shield" size={30} /><div><strong>Trust makes a difference.</strong><p>Listings with detailed condition notes and authenticity information sell 32% faster.</p></div><button onClick={() => navigate("products")}>Improve listings</button></div>
     </main>
@@ -561,33 +513,52 @@ function Dashboard({ navigate }: { navigate: (page: Page) => void }) {
 }
 
 function SellerProducts({ navigate }: { navigate: (page: Page) => void }) {
+  const { user, profile } = useAuth();
+  const { products, loading, error, refetch } = useProducts({ sellerId: user?.id });
+  const { categories } = useCategories();
   const [showAdd, setShowAdd] = useState(false);
-  const [removed, setRemoved] = useState<number[]>([]);
+  const [removed, setRemoved] = useState<string[]>([]);
+
+  const handleDelete = async (productId: string) => {
+    try {
+      await deleteProduct(productId);
+      setRemoved([...removed, productId]);
+      refetch();
+    } catch (err) {
+      console.error('Error deleting product:', err);
+      alert('Failed to delete product. Please try again.');
+    }
+  };
+
+  if (!user || profile?.role !== 'seller') {
+    return <main className="inner-page"><div className="page-intro"><span className="eyebrow">Access denied</span><h1>Seller access required</h1></div></main>;
+  }
+
   return (
     <main className="inner-page">
       <div className="dashboard-title"><div><span className="eyebrow">Inventory</span><h1>Your products</h1><p>Manage active, draft and sold pieces in your collection.</p></div><button className="button primary" onClick={() => setShowAdd(true)}><Icon name="plus" /> Add a product</button></div>
       <div className="table-card">
-        <div className="table-tools"><div className="tab-buttons"><button className="active">Active 41</button><button>Drafts 7</button><button>Sold 126</button></div><label className="search-field"><Icon name="search" size={17} /><input placeholder="Search inventory" /></label></div>
+        <div className="table-tools"><div className="tab-buttons"><button className="active">Active {products.filter(p => p.status === 'active').length}</button><button>Drafts {products.filter(p => p.status === 'draft').length}</button><button>Sold {products.filter(p => p.status === 'sold').length}</button></div><label className="search-field"><Icon name="search" size={17} /><input placeholder="Search inventory" /></label></div>
         <div className="inventory-list">
-          {products.slice(0, 6).filter((p) => !removed.includes(p.id)).map((product) => <div className="inventory-row" key={product.id}><img src={product.image} alt="" /><div className="inventory-name"><strong>{product.name}</strong><span>{product.category} · {product.year}</span></div><strong>{money(product.price)}</strong><span>{product.condition}</span><span><Badge>{product.verified}</Badge></span><span>{product.stock} in stock</span><div className="row-actions"><button aria-label="View" onClick={() => navigate("shop")}><Icon name="search" size={16} /></button><button aria-label="Edit"><Icon name="edit" size={16} /></button><button aria-label="Delete" onClick={() => setRemoved([...removed, product.id])}><Icon name="trash" size={16} /></button></div></div>)}
+          {loading ? <p>Loading...</p> : error ? <p>Error: {error.message}</p> : products.filter((p) => !removed.includes(p.id)).map((product) => <div className="inventory-row" key={product.id}><img src={product.images?.[0] || ''} alt="" /><div className="inventory-name"><strong>{product.name}</strong><span>{product.category_name || 'Uncategorized'} · {product.year || 'Unknown'}</span></div><strong>{money(product.price)}</strong><span>{product.condition}</span><span><Badge>{product.verified}</Badge></span><span>{product.stock} in stock</span><div className="row-actions"><button aria-label="View" onClick={() => navigate("shop")}><Icon name="search" size={16} /></button><button aria-label="Edit"><Icon name="edit" size={16} /></button><button aria-label="Delete" onClick={() => handleDelete(product.id)}><Icon name="trash" size={16} /></button></div></div>)}
         </div>
       </div>
       {showAdd && <div className="modal-backdrop" onClick={() => setShowAdd(false)}><div className="modal" onClick={(e) => e.stopPropagation()}><button className="modal-close" onClick={() => setShowAdd(false)}><Icon name="close" /></button><span className="eyebrow">New listing</span><h2>Add a vintage piece</h2><form onSubmit={(e) => { e.preventDefault(); setShowAdd(false); }}>
         <div className="image-upload"><Icon name="plus" /><strong>Add product images</strong><span>Up to 8 images, JPG or PNG</span></div>
-        <div className="form-grid"><label className="wide">Product name<input required placeholder="e.g. 1960s ceramic table lamp" /></label><label>Category<select><option>Home Decor</option><option>Vintage Electronics</option><option>Classic Toys</option><option>Retro Fashion</option></select></label><label>Price<input required type="number" placeholder="0.00" /></label><label>Condition<select><option>Mint</option><option>Excellent</option><option>Good</option><option>Fair</option></select></label><label>Year / era<input placeholder="e.g. 1960s" /></label><label>Brand or maker<input placeholder="If known" /></label><label>Quantity<input type="number" defaultValue="1" /></label><label className="wide">Description<textarea required placeholder="Tell buyers what makes this piece special..." /></label><label className="wide">Authenticity information<textarea placeholder="Provenance, markings, expert inspection..." /></label></div>
+        <div className="form-grid"><label className="wide">Product name<input required placeholder="e.g. 1960s ceramic table lamp" /></label><label>Category<select><option value="">Select category</option>{categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></label><label>Price<input required type="number" placeholder="0.00" /></label><label>Condition<select><option>Mint</option><option>Excellent</option><option>Good</option><option>Fair</option></select></label><label>Year / era<input placeholder="e.g. 1960s" /></label><label>Brand or maker<input placeholder="If known" /></label><label>Quantity<input type="number" defaultValue="1" /></label><label className="wide">Description<textarea required placeholder="Tell buyers what makes this piece special..." /></label><label className="wide">Authenticity information<textarea placeholder="Provenance, markings, expert inspection..." /></label></div>
         <div className="modal-actions"><button type="button" className="button outline" onClick={() => setShowAdd(false)}>Save draft</button><button className="button primary" type="submit">Publish listing</button></div>
       </form></div></div>}
     </main>
   );
 }
 
-function Sales() {
+function Sales({ products }: { products: Product[] }) {
   return (
     <main className="inner-page">
       <div className="dashboard-title"><div><span className="eyebrow">Performance</span><h1>Sales overview</h1><p>Understand how your collection is performing.</p></div><select><option>Last 6 months</option><option>This year</option></select></div>
       <div className="stats-grid"><div className="stat-card"><small>Gross sales</small><strong>$18,420</strong><p>+18.2% from last period</p></div><div className="stat-card"><small>Net earnings</small><strong>$16,578</strong><p>After marketplace fees</p></div><div className="stat-card"><small>Average order</small><strong>$146</strong><p>Across 126 sales</p></div><div className="stat-card"><small>Conversion</small><strong>4.8%</strong><p>+0.6% improvement</p></div></div>
       <div className="sales-chart table-card"><div className="panel-heading"><h2>Sales activity</h2><Badge>Healthy growth</Badge></div><div className="chart-bars">{[34, 48, 42, 65, 58, 82, 76, 92, 68, 88, 79, 100].map((height, i) => <div key={i}><i style={{ height: `${height}%` }} /><span>{["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"][i]}</span></div>)}</div></div>
-      <div className="table-card best-sellers"><div className="panel-heading"><h2>Best-selling pieces</h2></div>{products.slice(0, 4).map((product, index) => <div className="recent-row" key={product.id}><span className="rank">0{index + 1}</span><img src={product.image} alt="" /><div><strong>{product.name}</strong><span>{index * 4 + 7} sold</span></div><b>{money(product.price * (index * 4 + 7))}</b></div>)}</div>
+      <div className="table-card best-sellers"><div className="panel-heading"><h2>Best-selling pieces</h2></div>{products.slice(0, 4).map((product, index) => <div className="recent-row" key={product.id}><span className="rank">0{index + 1}</span><img src={product.images?.[0] || ''} alt="" /><div><strong>{product.name}</strong><span>{index * 4 + 7} sold</span></div><b>{money(product.price * (index * 4 + 7))}</b></div>)}</div>
     </main>
   );
 }
@@ -647,9 +618,17 @@ function Auth({ mode, navigate, onLogin }: { mode: "login" | "register" | "forgo
 export default function App() {
   const { user, profile, loading: authLoading, signOut } = useAuth();
   const [page, setPage] = useState<Page>("login");
-  const [selectedProduct, setSelectedProduct] = useState(products[0]);
-  const [cart, setCart] = useState<Product[]>([]);
-  const [favorites, setFavorites] = useState<number[]>([2, 5]);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
+  // Fetch products and categories for buyers
+  const { products, loading: productsLoading, error: productsError } = useProducts();
+  const { categories, loading: categoriesLoading, error: categoriesError } = useCategories();
+
+  // Fetch wishlist for authenticated users
+  const { wishlist, toggleWishlist } = useWishlist(user?.id || null);
+
+  // Fetch cart for authenticated users
+  const { cart, addToCart: addToCartDb, removeFromCart: removeFromCartDb, cartCount } = useCart(user?.id || null);
 
   const role = profile?.role || "buyer";
 
@@ -686,34 +665,71 @@ export default function App() {
     await signOut();
     navigate("login");
   };
-  const toggleFavorite = (id: number) => setFavorites((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
-  const addToCart = (product: Product) => setCart((current) => current.some((item) => item.id === product.id) ? current : [...current, product]);
+
+  const toggleFavorite = (id: string) => {
+    if (user) {
+      toggleWishlist(id);
+    }
+  };
+
+  const addToCart = (product: Product) => {
+    if (user) {
+      addToCartDb(product.id);
+    }
+  };
+
+  const removeFromCart = (id: string) => {
+    if (user) {
+      removeFromCartDb(id);
+    }
+  };
+
   const authPage = page === "login" || page === "register" || page === "forgot";
 
   if (authLoading) {
     return <div className="loading" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '1.5rem' }}>Loading...</div>;
   }
 
+  // Convert cart items to Product format for components
+  const cartProducts: Product[] = cart.map(item => ({
+    id: item.product_id,
+    seller_id: item.product?.seller_id || '',
+    name: item.product?.name || '',
+    price: item.product?.price || 0,
+    category_id: item.product?.category_id || null,
+    category_name: item.product?.category_name,
+    condition: item.product?.condition || 'Good',
+    year: item.product?.year || null,
+    verified: item.product?.verified || 'Pending',
+    stock: item.product?.stock || 0,
+    description: item.product?.description || null,
+    images: item.product?.images || [],
+    status: item.product?.status || 'active',
+    seller_name: item.product?.seller_name,
+    created_at: item.product?.created_at || '',
+    updated_at: item.product?.updated_at || '',
+  }));
+
   let content: React.ReactNode;
-  if (page === "home") content = <Home navigate={navigate} favorites={favorites} toggleFavorite={toggleFavorite} />;
-  else if (page === "shop") content = <Shop navigate={navigate} favorites={favorites} toggleFavorite={toggleFavorite} />;
-  else if (page === "product") content = <ProductDetail product={selectedProduct} favorite={favorites.includes(selectedProduct.id)} toggleFavorite={() => toggleFavorite(selectedProduct.id)} addToCart={() => addToCart(selectedProduct)} navigate={navigate} />;
-  else if (page === "wishlist") content = <main className="inner-page"><div className="page-intro compact"><span className="eyebrow">Saved for later</span><h1>Your wishlist</h1><p>Pieces that caught your eye.</p></div><div className="product-grid four">{products.filter((p) => favorites.includes(p.id)).map((p) => <ProductCard key={p.id} product={p} onOpen={() => navigate("product", p)} favorite onFavorite={() => toggleFavorite(p.id)} />)}</div></main>;
-  else if (page === "cart") content = <Cart items={cart} remove={(id) => setCart(cart.filter((item) => item.id !== id))} navigate={navigate} />;
-  else if (page === "checkout") content = <Checkout items={cart.length ? cart : [products[0]]} navigate={navigate} />;
+  if (page === "home") content = <Home navigate={navigate} favorites={wishlist} toggleFavorite={toggleFavorite} products={products} categories={categories} loading={productsLoading || categoriesLoading} error={productsError || categoriesError} />;
+  else if (page === "shop") content = <Shop navigate={navigate} favorites={wishlist} toggleFavorite={toggleFavorite} products={products} categories={categories} loading={productsLoading || categoriesLoading} error={productsError || categoriesError} />;
+  else if (page === "product") content = selectedProduct ? <ProductDetail product={selectedProduct} favorite={wishlist.includes(selectedProduct.id)} toggleFavorite={() => toggleFavorite(selectedProduct.id)} addToCart={() => addToCart(selectedProduct)} navigate={navigate} /> : null;
+  else if (page === "wishlist") content = <main className="inner-page"><div className="page-intro compact"><span className="eyebrow">Saved for later</span><h1>Your wishlist</h1><p>Pieces that caught your eye.</p></div><div className="product-grid four">{products.filter((p) => wishlist.includes(p.id)).map((p) => <ProductCard key={p.id} product={p} onOpen={() => navigate("product", p)} favorite onFavorite={() => toggleFavorite(p.id)} />)}</div></main>;
+  else if (page === "cart") content = <Cart items={cartProducts} remove={removeFromCart} navigate={navigate} />;
+  else if (page === "checkout") content = <Checkout items={cartProducts.length ? cartProducts : products.slice(0, 1)} navigate={navigate} />;
   else if (page === "confirmation") content = <Confirmation navigate={navigate} />;
   else if (page === "orders") content = <Orders />;
   else if (page === "profile") content = <Profile navigate={navigate} onLogout={handleLogout} />;
-  else if (page === "dashboard") content = <Dashboard navigate={navigate} />;
+  else if (page === "dashboard") content = <Dashboard navigate={navigate} products={products} loading={productsLoading} />;
   else if (page === "products") content = <SellerProducts navigate={navigate} />;
   else if (page === "seller-orders") content = <Orders seller />;
-  else if (page === "sales") content = <Sales />;
+  else if (page === "sales") content = <Sales products={products} />;
   else if (page === "seller-profile") content = <Profile seller navigate={navigate} onLogout={handleLogout} />;
   else content = <Auth mode={page as "login" | "register" | "forgot"} navigate={navigate} onLogin={handleLogin} />;
 
   return (
     <div className="app">
-      {!authPage && <Header role={role} page={page} cartCount={cart.length} onNavigate={navigate} onLogout={handleLogout} />}
+      {!authPage && <Header role={role} page={page} cartCount={cartCount} onNavigate={navigate} onLogout={handleLogout} />}
       {content}
     </div>
   );
