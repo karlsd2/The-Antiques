@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useAuth, type UserRole, type Profile } from "./hooks/useAuth";
 import { useProducts, useCategories, deleteProduct, type Product as ProductType, type Category } from "./hooks/useProducts";
 import { useWishlist } from "./hooks/useWishlist";
@@ -744,6 +744,16 @@ export default function App() {
   const { user, profile, loading: authLoading, signOut, updateProfile } = useAuth();
   const [page, setPage] = useState<Page>("login");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
+  // Navigate to appropriate page after auth loads (only if on auth pages)
+  useEffect(() => {
+    if (!authLoading && user && profile) {
+      if (page === "login" || page === "register" || page === "forgot") {
+        const initialPage = profile.role === 'seller' ? 'dashboard' : 'home';
+        setPage(initialPage);
+      }
+    }
+  }, [authLoading, user, profile, page]);
 
   // Fetch products and categories for buyers
   const { products, loading: productsLoading, error: productsError } = useProducts();
