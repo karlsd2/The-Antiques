@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useAuth, type UserRole } from "./hooks/useAuth";
+import { useAuth, type UserRole, type Profile } from "./hooks/useAuth";
 import { useProducts, useCategories, deleteProduct, type Product as ProductType, type Category } from "./hooks/useProducts";
 import { useWishlist } from "./hooks/useWishlist";
 import { useCart } from "./hooks/useCart";
@@ -478,30 +478,155 @@ function Orders({ seller = false }: { seller?: boolean }) {
   );
 }
 
-function Profile({ seller = false, navigate, onLogout }: { seller?: boolean; navigate: (page: Page) => void; onLogout: () => void }) {
+function Profile({ seller = false, navigate, onLogout, profile, updateProfile, user }: { seller?: boolean; navigate: (page: Page) => void; onLogout: () => void; profile: Profile | null; updateProfile: (updates: Partial<Profile>) => Promise<Profile>; user: any }) {
+  const [showEdit, setShowEdit] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  // Generate initials from name or store name
+  const getInitials = (name: string | null, storeName: string | null) => {
+    const source = seller ? storeName : name;
+    if (!source) return seller ? 'S' : 'U';
+    const parts = source.trim().split(' ');
+    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+  };
+
+  // Format date to readable format
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+  };
+
+  const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setSuccess(false);
+
+    const formData = new FormData(e.currentTarget);
+    const updates: Partial<Profile> = {};
+
+    if (seller) {
+      updates.store_name = formData.get('store_name') as string || null;
+      updates.store_description = formData.get('store_description') as string || null;
+    } else {
+      updates.full_name = formData.get('full_name') as string || null;
+    }
+    updates.phone = formData.get('phone') as string || null;
+    updates.location = formData.get('location') as string || null;
+
+    try {
+      await updateProfile(updates);
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+      setShowEdit(false);
+    } catch (err: any) {
+      setError(err.message || 'Failed to update profile');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!profile) {
+    return (
+      <main className="inner-page profile-page">
+        <div className="page-intro">
+          <span className="eyebrow">Profile</span>
+          <h1>Loading profile...</h1>
+        </div>
+      </main>
+    );
+  }
+
+  const initials = getInitials(profile.full_name, profile.store_name);
+  const displayName = seller ? profile.store_name || profile.full_name : profile.full_name;
+  const displayDescription = seller ? profile.store_description : 'Collector of vintage and antique pieces';
+  const memberSince = formatDate(profile.created_at);
+
   return (
     <main className="inner-page profile-page">
       <div className="profile-hero">
-        <div className="large-avatar">{seller ? "FF" : "MR"}</div>
-        <div><span className="eyebrow">{seller ? "Trusted seller since 2022" : "Member since 2024"}</span><h1>{seller ? "Found & Form" : "Maya Rivera"}</h1><p>{seller ? "Considered vintage objects for slower, more personal homes." : "Collector of analog cameras, records and beautifully made things."}</p></div>
-        <div className="profile-actions"><button className="button outline"><Icon name="edit" size={17} /> Edit profile</button><button className="button outline" onClick={onLogout}><Icon name="close" size={17} /> Sign out</button></div>
+        <div className="large-avatar">{initials}</div>
+        <div>
+          <span className="eyebrow">Member since {memberSince}</span>
+          <h1>{displayName || 'User'}</h1>
+          <p>{displayDescription || 'No description provided'}</p>
+        </div>
+        <div className="profile-actions">
+          <button className="button outline" onClick={() => setShowEdit(true)}><Icon name="edit" size={17} /> Edit profile</button>
+          <button className="button outline" onClick={onLogout}><Icon name="close" size={17} /> Sign out</button>
+        </div>
       </div>
       <div className="profile-grid">
-        <div className="profile-panel"><h2>{seller ? "Store information" : "Profile information"}</h2><dl><div><dt>Email</dt><dd>{seller ? "hello@foundandform.co" : "maya.rivera@example.com"}</dd></div><div><dt>Phone</dt><dd>+1 718 555 0142</dd></div><div><dt>Location</dt><dd>Brooklyn, New York</dd></div></dl><button className="text-link">Update information <Icon name="arrow" /></button></div>
-        <div className="profile-panel"><h2>{seller ? "Store performance" : "Saved address"}</h2>{seller ? <div className="mini-stats"><div><strong>48</strong><span>Listed</span></div><div><strong>126</strong><span>Sold</span></div><div><strong>4.9</strong><span>Rating</span></div></div> : <><p><strong>Home</strong><br />Maya Rivera<br />123 Bedford Avenue<br />Brooklyn, NY 11211</p><button className="text-link">Manage addresses <Icon name="arrow" /></button></>}</div>
+        <div className="profile-panel">
+          <h2>{seller ? "Store information" : "Profile information"}</h2>
+          <dl>
+            <div><dt>Email</dt><dd>{profile.email || user?.email || 'Not provided'}</dd></div>
+            <div><dt>Phone</dt><dd>{profile.phone || 'Not provided'}</dd></div>
+            <div><dt>Location</dt><dd>{profile.location || 'Not provided'}</dd></div>
+          </dl>
+          <button className="text-link" onClick={() => setShowEdit(true)}>Update information <Icon name="arrow" /></button>
+        </div>
+        <div className="profile-panel">
+          <h2>{seller ? "Store performance" : "Account details"}</h2>
+          {seller ? (
+            <div className="mini-stats">
+              <div><strong>--</strong><span>Listed</span></div>
+              <div><strong>--</strong><span>Sold</span></div>
+              <div><strong>--</strong><span>Rating</span></div>
+            </div>
+          ) : (
+            <p><strong>Role</strong><br />{profile.role || 'Buyer'}</p>
+          )}
+        </div>
       </div>
       <div className="quick-links">
-        {(seller ? [["Listed products", "products"], ["Sold products", "sales"], ["Seller orders", "seller-orders"]] : [["Order history", "orders"], ["Your wishlist", "wishlist"], ["Account settings", "profile"]]).map(([label, destination]) => <button key={label} onClick={() => navigate(destination as Page)}>{label}<Icon name="arrow" /></button>)}
+        {(seller ? [["Listed products", "products"], ["Sold products", "sales"], ["Seller orders", "seller-orders"]] : [["Order history", "orders"], ["Your wishlist", "wishlist"], ["Account settings", "profile"]]).map(([label, destination]) => (
+          <button key={label} onClick={() => navigate(destination as Page)}>{label}<Icon name="arrow" /></button>
+        ))}
       </div>
+
+      {showEdit && (
+        <div className="modal-backdrop" onClick={() => setShowEdit(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setShowEdit(false)}><Icon name="close" /></button>
+            <span className="eyebrow">Edit profile</span>
+            <h2>{seller ? "Update store information" : "Update your profile"}</h2>
+            {success && <div style={{ color: 'green', marginBottom: '1rem' }}>Profile updated successfully!</div>}
+            {error && <div style={{ color: '#dc2626', marginBottom: '1rem' }}>{error}</div>}
+            <form onSubmit={handleUpdate}>
+              <div className="form-grid">
+                {seller ? (
+                  <>
+                    <label className="wide">Store name<input name="store_name" defaultValue={profile.store_name || ''} placeholder="Your store name" /></label>
+                    <label className="wide">Store description<textarea name="store_description" defaultValue={profile.store_description || ''} placeholder="Describe your store..." rows={3} /></label>
+                  </>
+                ) : (
+                  <label className="wide">Full name<input name="full_name" defaultValue={profile.full_name || ''} placeholder="Your full name" /></label>
+                )}
+                <label>Phone<input name="phone" defaultValue={profile.phone || ''} placeholder="+1 555 123 4567" /></label>
+                <label>Location<input name="location" defaultValue={profile.location || ''} placeholder="City, State" /></label>
+              </div>
+              <div className="modal-actions">
+                <button type="button" className="button outline" onClick={() => setShowEdit(false)}>Cancel</button>
+                <button className="button primary" type="submit" disabled={loading}>{loading ? 'Saving...' : 'Save changes'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
 
-function Dashboard({ navigate, products, loading }: { navigate: (page: Page) => void; products: Product[]; loading: boolean }) {
+function Dashboard({ navigate, products, loading, profile }: { navigate: (page: Page) => void; products: Product[]; loading: boolean; profile: Profile | null }) {
   const stats = [["Total products", "48", "+4 this month", "box"], ["Active listings", "41", "85% of inventory", "bag"], ["Items sold", "126", "+12 this month", "check"], ["Total sales", "$18.4k", "+18.2% this month", "chart"]];
+  const storeName = profile?.store_name || profile?.full_name || 'Seller';
   return (
     <main className="inner-page">
-      <div className="dashboard-title"><div><span className="eyebrow">Seller workspace</span><h1>Good morning, Found & Form.</h1><p>Here’s what’s happening with your collection today.</p></div><button className="button primary" onClick={() => navigate("products")}><Icon name="plus" /> Add a product</button></div>
+      <div className="dashboard-title"><div><span className="eyebrow">Seller workspace</span><h1>Good morning, {storeName}.</h1><p>Here’s what’s happening with your collection today.</p></div><button className="button primary" onClick={() => navigate("products")}><Icon name="plus" /> Add a product</button></div>
       <div className="stats-grid">{stats.map(([label, value, note, icon]) => <div className="stat-card" key={label}><span><Icon name={icon} /></span><small>{label}</small><strong>{value}</strong><p>{note}</p></div>)}</div>
       <div className="dashboard-grid">
         <div className="table-card"><div className="panel-heading"><h2>Recent orders</h2><button className="text-link" onClick={() => navigate("seller-orders")}>View all <Icon name="arrow" /></button></div>{orderData.slice(0, 3).map((order) => <div className="recent-row" key={order[0]}><div className="avatar small">{order[1][0]}</div><div><strong>{order[1]}</strong><span>{order[0]} · {order[2]}</span></div><b>{order[3]}</b><i className={`status ${order[4].toLowerCase()}`}>{order[4]}</i></div>)}</div>
@@ -616,7 +741,7 @@ function Auth({ mode, navigate, onLogin }: { mode: "login" | "register" | "forgo
 }
 
 export default function App() {
-  const { user, profile, loading: authLoading, signOut } = useAuth();
+  const { user, profile, loading: authLoading, signOut, updateProfile } = useAuth();
   const [page, setPage] = useState<Page>("login");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
@@ -719,12 +844,12 @@ export default function App() {
   else if (page === "checkout") content = <Checkout items={cartProducts.length ? cartProducts : products.slice(0, 1)} navigate={navigate} />;
   else if (page === "confirmation") content = <Confirmation navigate={navigate} />;
   else if (page === "orders") content = <Orders />;
-  else if (page === "profile") content = <Profile navigate={navigate} onLogout={handleLogout} />;
-  else if (page === "dashboard") content = <Dashboard navigate={navigate} products={products} loading={productsLoading} />;
+  else if (page === "profile") content = <Profile navigate={navigate} onLogout={handleLogout} profile={profile} updateProfile={updateProfile} user={user} />;
+  else if (page === "dashboard") content = <Dashboard navigate={navigate} products={products} loading={productsLoading} profile={profile} />;
   else if (page === "products") content = <SellerProducts navigate={navigate} />;
   else if (page === "seller-orders") content = <Orders seller />;
   else if (page === "sales") content = <Sales products={products} />;
-  else if (page === "seller-profile") content = <Profile seller navigate={navigate} onLogout={handleLogout} />;
+  else if (page === "seller-profile") content = <Profile seller navigate={navigate} onLogout={handleLogout} profile={profile} updateProfile={updateProfile} user={user} />;
   else content = <Auth mode={page as "login" | "register" | "forgot"} navigate={navigate} onLogin={handleLogin} />;
 
   return (
