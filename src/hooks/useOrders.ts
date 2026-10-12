@@ -76,7 +76,7 @@ export function useOrders(userId: string | null, isSeller: boolean = false) {
 
         setOrders(sellerOrders)
       } else {
-        // For buyers, get their own orders
+        // For buyers, get their own orders without joining order_items to avoid RLS recursion
         query = query.eq('buyer_id', userId).order('created_at', { ascending: false })
 
         const { data, error } = await query
@@ -93,8 +93,8 @@ export function useOrders(userId: string | null, isSeller: boolean = false) {
           shipping_address: item.shipping_address,
           created_at: item.created_at,
           updated_at: item.updated_at,
-          items: item.order_items,
-          buyer_name: item.profiles?.full_name,
+          items: [], // Will be fetched separately if needed
+          buyer_name: undefined, // Can fetch from profiles if needed
         }))
 
         setOrders(transformedData)

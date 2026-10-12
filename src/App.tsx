@@ -479,7 +479,7 @@ function Orders({ seller = false }: { seller?: boolean }) {
             orders.map((order) => (
               <div className="table-row" key={order.id}>
                 <strong>{order.order_number}</strong>
-                <span>{seller && order.buyer_name ? <small>{order.buyer_name} · </small> : ''}{order.items?.[0]?.product_name || 'Product'}</span>
+                <span>{seller && order.buyer_name ? <small>{order.buyer_name} · </small> : ''}{order.items?.[0]?.product_name || 'Order'}</span>
                 <span>{new Date(order.created_at).toLocaleDateString()}</span>
                 <span>{money(order.total)}</span>
                 <span><i className={`status ${order.status.toLowerCase()}`}>{order.status}</i></span>
