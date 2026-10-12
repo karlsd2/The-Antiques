@@ -636,8 +636,9 @@ function Profile({ seller = false, navigate, onLogout, profile, updateProfile, u
   );
 }
 
-function Dashboard({ navigate, products, loading, profile, user }: { navigate: (page: Page) => void; products: Product[]; loading: boolean; profile: Profile | null; user: any }) {
+function Dashboard({ navigate, products, loading, profile, user, refetch }: { navigate: (page: Page) => void; products: Product[]; loading: boolean; profile: Profile | null; user: any; refetch: () => void }) {
   const { orders, loading: ordersLoading } = useOrders(user?.id || null, true);
+  const storeName = profile?.store_name || profile?.full_name || 'Seller';
 
   // Calculate real metrics
   const totalProducts = products.length;
@@ -663,7 +664,6 @@ function Dashboard({ navigate, products, loading, profile, user }: { navigate: (
     ["Items sold", itemsSold.toString(), "All time", "check"],
     ["Total sales", money(totalSales), "All time", "chart"]
   ];
-  const storeName = profile?.store_name || profile?.full_name || 'Seller';
   return (
     <main className="inner-page">
       <div className="dashboard-title"><div><span className="eyebrow">Seller workspace</span><h1>Good morning, {storeName}.</h1><p>Here’s what’s happening with your collection today.</p></div><button className="button primary" onClick={() => navigate("products")}><Icon name="plus" /> Add a product</button></div>
@@ -708,7 +708,7 @@ function Dashboard({ navigate, products, loading, profile, user }: { navigate: (
   );
 }
 
-function SellerProducts({ navigate }: { navigate: (page: Page) => void }) {
+function SellerProducts({ navigate, onProductCreated }: { navigate: (page: Page) => void; onProductCreated?: () => void }) {
   const { user, profile } = useAuth();
   const { products, loading, error, refetch } = useProducts({ sellerId: user?.id });
   const { categories } = useCategories();
@@ -772,6 +772,9 @@ function SellerProducts({ navigate }: { navigate: (page: Page) => void }) {
       });
       setShowAdd(false);
       refetch();
+      if (onProductCreated) {
+        onProductCreated();
+      }
     } catch (err: any) {
       console.error('Error creating product:', err);
       setFormError(err.message || 'Failed to create product. Please try again.');
@@ -881,8 +884,11 @@ export default function App() {
   }, [authLoading, user, profile, page]);
 
   // Fetch products and categories for buyers
-  const { products, loading: productsLoading, error: productsError } = useProducts();
+  const { products, loading: productsLoading, error: productsError, refetch: refetchProducts } = useProducts();
   const { categories, loading: categoriesLoading, error: categoriesError } = useCategories();
+
+  // Fetch seller-specific products for dashboard
+  const { products: sellerProducts, loading: sellerProductsLoading, refetch: refetchSellerProducts } = useProducts({ sellerId: user?.id });
 
   // Fetch wishlist for authenticated users
   const { wishlist, toggleWishlist } = useWishlist(user?.id || null);
@@ -980,8 +986,8 @@ export default function App() {
   else if (page === "confirmation") content = <Confirmation navigate={navigate} />;
   else if (page === "orders") content = <Orders />;
   else if (page === "profile") content = <Profile navigate={navigate} onLogout={handleLogout} profile={profile} updateProfile={updateProfile} user={user} />;
-  else if (page === "dashboard") content = <Dashboard navigate={navigate} products={products} loading={productsLoading} profile={profile} user={user} />;
-  else if (page === "products") content = <SellerProducts navigate={navigate} />;
+  else if (page === "dashboard") content = <Dashboard navigate={navigate} products={sellerProducts} loading={sellerProductsLoading} profile={profile} user={user} refetch={refetchSellerProducts} />;
+  else if (page === "products") content = <SellerProducts navigate={navigate} onProductCreated={refetchSellerProducts} />;
   else if (page === "seller-orders") content = <Orders seller />;
   else if (page === "sales") content = <Sales products={products} />;
   else if (page === "seller-profile") content = <Profile seller navigate={navigate} onLogout={handleLogout} profile={profile} updateProfile={updateProfile} user={user} />;
