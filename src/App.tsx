@@ -1,8 +1,9 @@
 import { useMemo, useState, useEffect } from "react";
 import { useAuth, type UserRole, type Profile } from "./hooks/useAuth";
-import { useProducts, useCategories, deleteProduct, type Product as ProductType, type Category } from "./hooks/useProducts";
+import { useProducts, useCategories, deleteProduct, createProduct, type Product as ProductType, type Category } from "./hooks/useProducts";
 import { useWishlist } from "./hooks/useWishlist";
 import { useCart } from "./hooks/useCart";
+import { useOrders } from "./hooks/useOrders";
 
 type Role = "buyer" | "seller";
 type Page =
@@ -456,22 +457,36 @@ function Confirmation({ navigate }: { navigate: (page: Page) => void }) {
   return <main className="confirmation"><div className="success-mark"><Icon name="check" size={36} /></div><span className="eyebrow">Order confirmed</span><h1>A new story<br /><em>is on its way.</em></h1><p>Thank you, Maya. We’ve sent confirmation and tracking details to your email.</p><div className="order-ticket"><div><span>Order number</span><strong>#TA-2048</strong></div><div><span>Estimated delivery</span><strong>June 18–21</strong></div></div><div className="hero-actions"><button className="button primary" onClick={() => navigate("orders")}>View your order</button><button className="button outline" onClick={() => navigate("shop")}>Keep exploring</button></div></main>;
 }
 
-const orderData = [
-  ["#TA-2048", "Walnut Turntable", "Jun 12, 2026", "$285", "Confirmed"],
-  ["#TA-1891", "Brass Desk Lamp", "May 20, 2026", "$164", "Delivered"],
-  ["#TA-1764", "Kodak Brownie Camera", "Apr 03, 2026", "$98", "Delivered"],
-  ["#TA-1590", "Silk Evening Scarf", "Mar 14, 2026", "$72", "Cancelled"],
-];
+
 
 function Orders({ seller = false }: { seller?: boolean }) {
+  const { user } = useAuth();
+  const { orders, loading, error } = useOrders(user?.id || null, seller);
   return (
     <main className="inner-page">
       <div className="dashboard-title"><div><span className="eyebrow">{seller ? "Seller workspace" : "Your collection"}</span><h1>{seller ? "Manage orders" : "Your orders"}</h1><p>{seller ? "Keep buyers updated from purchase to delivery." : "Follow every piece from the seller’s hands to yours."}</p></div></div>
       <div className="table-card">
-        <div className="table-tools"><strong>{orderData.length} orders</strong><label className="search-field"><Icon name="search" size={17} /><input placeholder="Search orders" /></label></div>
+        <div className="table-tools"><strong>{orders.length} orders</strong><label className="search-field"><Icon name="search" size={17} /><input placeholder="Search orders" /></label></div>
         <div className="data-table">
           <div className="table-row header"><span>Order</span><span>{seller ? "Buyer / Product" : "Product"}</span><span>Date</span><span>Total</span><span>Status</span><span></span></div>
-          {orderData.map((order, index) => <div className="table-row" key={order[0]}><strong>{order[0]}</strong><span>{seller && <small>{["Maya Rivera", "Noah Reed", "Ava Brooks", "Liam Chen"][index]} · </small>}{order[1]}</span><span>{order[2]}</span><span>{order[3]}</span><span><i className={`status ${order[4].toLowerCase()}`}>{order[4]}</i></span><button>{seller ? "Update" : "View"} <Icon name="chevron" size={14} /></button></div>)}
+          {loading ? (
+            <div className="table-row"><span>Loading...</span></div>
+          ) : error ? (
+            <div className="table-row"><span>Error: {error.message}</span></div>
+          ) : orders.length === 0 ? (
+            <div className="table-row"><span>No orders yet.</span></div>
+          ) : (
+            orders.map((order) => (
+              <div className="table-row" key={order.id}>
+                <strong>{order.order_number}</strong>
+                <span>{seller && order.buyer_name ? <small>{order.buyer_name} · </small> : ''}{order.items?.[0]?.product_name || 'Product'}</span>
+                <span>{new Date(order.created_at).toLocaleDateString()}</span>
+                <span>{money(order.total)}</span>
+                <span><i className={`status ${order.status.toLowerCase()}`}>{order.status}</i></span>
+                <button>{seller ? "Update" : "View"} <Icon name="chevron" size={14} /></button>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </main>
@@ -621,16 +636,72 @@ function Profile({ seller = false, navigate, onLogout, profile, updateProfile, u
   );
 }
 
-function Dashboard({ navigate, products, loading, profile }: { navigate: (page: Page) => void; products: Product[]; loading: boolean; profile: Profile | null }) {
-  const stats = [["Total products", "48", "+4 this month", "box"], ["Active listings", "41", "85% of inventory", "bag"], ["Items sold", "126", "+12 this month", "check"], ["Total sales", "$18.4k", "+18.2% this month", "chart"]];
+function Dashboard({ navigate, products, loading, profile, user }: { navigate: (page: Page) => void; products: Product[]; loading: boolean; profile: Profile | null; user: any }) {
+  const { orders, loading: ordersLoading } = useOrders(user?.id || null, true);
+
+  // Calculate real metrics
+  const totalProducts = products.length;
+  const activeListings = products.filter(p => p.status === 'active').length;
+  const activePercentage = totalProducts > 0 ? Math.round((activeListings / totalProducts) * 100) : 0;
+
+  // Calculate items sold and total sales from order_items
+  const itemsSold = orders.reduce((sum, order) => {
+    return sum + (order.items?.reduce((itemSum, item) => {
+      return itemSum + item.quantity;
+    }, 0) || 0);
+  }, 0);
+
+  const totalSales = orders.reduce((sum, order) => {
+    return sum + (order.items?.reduce((itemSum, item) => {
+      return itemSum + (item.price * item.quantity);
+    }, 0) || 0);
+  }, 0);
+
+  const stats = [
+    ["Total products", totalProducts.toString(), "All time", "box"],
+    ["Active listings", activeListings.toString(), `${activePercentage}% of inventory`, "bag"],
+    ["Items sold", itemsSold.toString(), "All time", "check"],
+    ["Total sales", money(totalSales), "All time", "chart"]
+  ];
   const storeName = profile?.store_name || profile?.full_name || 'Seller';
   return (
     <main className="inner-page">
       <div className="dashboard-title"><div><span className="eyebrow">Seller workspace</span><h1>Good morning, {storeName}.</h1><p>Here’s what’s happening with your collection today.</p></div><button className="button primary" onClick={() => navigate("products")}><Icon name="plus" /> Add a product</button></div>
       <div className="stats-grid">{stats.map(([label, value, note, icon]) => <div className="stat-card" key={label}><span><Icon name={icon} /></span><small>{label}</small><strong>{value}</strong><p>{note}</p></div>)}</div>
       <div className="dashboard-grid">
-        <div className="table-card"><div className="panel-heading"><h2>Recent orders</h2><button className="text-link" onClick={() => navigate("seller-orders")}>View all <Icon name="arrow" /></button></div>{orderData.slice(0, 3).map((order) => <div className="recent-row" key={order[0]}><div className="avatar small">{order[1][0]}</div><div><strong>{order[1]}</strong><span>{order[0]} · {order[2]}</span></div><b>{order[3]}</b><i className={`status ${order[4].toLowerCase()}`}>{order[4]}</i></div>)}</div>
-        <div className="table-card"><div className="panel-heading"><h2>Recent listings</h2><button className="text-link" onClick={() => navigate("products")}>Manage <Icon name="arrow" /></button></div>{loading ? <p>Loading...</p> : products.slice(0, 3).map((product) => <div className="recent-row" key={product.id}><img src={product.images?.[0] || ''} alt="" /><div><strong>{product.name}</strong><span>{product.condition} · Stock {product.stock}</span></div><b>{money(product.price)}</b></div>)}</div>
+        <div className="table-card">
+          <div className="panel-heading"><h2>Recent orders</h2><button className="text-link" onClick={() => navigate("seller-orders")}>View all <Icon name="arrow" /></button></div>
+          {ordersLoading ? (
+            <p>Loading...</p>
+          ) : orders.length === 0 ? (
+            <p>No orders yet.</p>
+          ) : (
+            orders.slice(0, 3).map((order) => (
+              <div className="recent-row" key={order.id}>
+                <div className="avatar small">{order.buyer_name?.[0] || 'B'}</div>
+                <div><strong>{order.buyer_name || 'Buyer'}</strong><span>{order.order_number} · {new Date(order.created_at).toLocaleDateString()}</span></div>
+                <b>{money(order.total)}</b>
+                <i className={`status ${order.status.toLowerCase()}`}>{order.status}</i>
+              </div>
+            ))
+          )}
+        </div>
+        <div className="table-card">
+          <div className="panel-heading"><h2>Recent listings</h2><button className="text-link" onClick={() => navigate("products")}>Manage <Icon name="arrow" /></button></div>
+          {loading ? (
+            <p>Loading...</p>
+          ) : products.length === 0 ? (
+            <p>No listings yet. Add your first product to get started.</p>
+          ) : (
+            products.slice(0, 3).map((product) => (
+              <div className="recent-row" key={product.id}>
+                <img src={product.images?.[0] || ''} alt="" />
+                <div><strong>{product.name}</strong><span>{product.condition} · Stock {product.stock}</span></div>
+                <b>{money(product.price)}</b>
+              </div>
+            ))
+          )}
+        </div>
       </div>
       <div className="seller-tip"><Icon name="shield" size={30} /><div><strong>Trust makes a difference.</strong><p>Listings with detailed condition notes and authenticity information sell 32% faster.</p></div><button onClick={() => navigate("products")}>Improve listings</button></div>
     </main>
@@ -643,6 +714,8 @@ function SellerProducts({ navigate }: { navigate: (page: Page) => void }) {
   const { categories } = useCategories();
   const [showAdd, setShowAdd] = useState(false);
   const [removed, setRemoved] = useState<string[]>([]);
+  const [formLoading, setFormLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const handleDelete = async (productId: string) => {
     try {
@@ -652,6 +725,58 @@ function SellerProducts({ navigate }: { navigate: (page: Page) => void }) {
     } catch (err) {
       console.error('Error deleting product:', err);
       alert('Failed to delete product. Please try again.');
+    }
+  };
+
+  const handleCreateProduct = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setFormLoading(true);
+    setFormError(null);
+
+    if (!user) {
+      setFormError('You must be logged in to add a product');
+      setFormLoading(false);
+      return;
+    }
+
+    const formData = new FormData(e.currentTarget);
+    const productName = formData.get('productName') as string;
+    const categoryId = formData.get('categoryId') as string;
+    const price = parseFloat(formData.get('price') as string);
+    const condition = formData.get('condition') as 'Mint' | 'Excellent' | 'Good' | 'Fair';
+    const year = formData.get('year') as string;
+    const stock = parseInt(formData.get('stock') as string);
+    const description = formData.get('description') as string;
+    const verified = formData.get('verified') as string;
+
+    // Basic validation
+    if (!productName || !price || !description) {
+      setFormError('Please fill in all required fields');
+      setFormLoading(false);
+      return;
+    }
+
+    try {
+      await createProduct({
+        seller_id: user.id,
+        name: productName,
+        price,
+        category_id: categoryId || null,
+        condition,
+        year: year || null,
+        verified: verified || 'Pending',
+        stock: stock || 1,
+        description,
+        images: [], // For now, empty array - image upload would need separate implementation
+        status: 'active',
+      });
+      setShowAdd(false);
+      refetch();
+    } catch (err: any) {
+      console.error('Error creating product:', err);
+      setFormError(err.message || 'Failed to create product. Please try again.');
+    } finally {
+      setFormLoading(false);
     }
   };
 
@@ -668,10 +793,10 @@ function SellerProducts({ navigate }: { navigate: (page: Page) => void }) {
           {loading ? <p>Loading...</p> : error ? <p>Error: {error.message}</p> : products.filter((p) => !removed.includes(p.id)).map((product) => <div className="inventory-row" key={product.id}><img src={product.images?.[0] || ''} alt="" /><div className="inventory-name"><strong>{product.name}</strong><span>{product.category_name || 'Uncategorized'} · {product.year || 'Unknown'}</span></div><strong>{money(product.price)}</strong><span>{product.condition}</span><span><Badge>{product.verified}</Badge></span><span>{product.stock} in stock</span><div className="row-actions"><button aria-label="View" onClick={() => navigate("shop")}><Icon name="search" size={16} /></button><button aria-label="Edit"><Icon name="edit" size={16} /></button><button aria-label="Delete" onClick={() => handleDelete(product.id)}><Icon name="trash" size={16} /></button></div></div>)}
         </div>
       </div>
-      {showAdd && <div className="modal-backdrop" onClick={() => setShowAdd(false)}><div className="modal" onClick={(e) => e.stopPropagation()}><button className="modal-close" onClick={() => setShowAdd(false)}><Icon name="close" /></button><span className="eyebrow">New listing</span><h2>Add a vintage piece</h2><form onSubmit={(e) => { e.preventDefault(); setShowAdd(false); }}>
+      {showAdd && <div className="modal-backdrop" onClick={() => setShowAdd(false)}><div className="modal" onClick={(e) => e.stopPropagation()}><button className="modal-close" onClick={() => setShowAdd(false)}><Icon name="close" /></button><span className="eyebrow">New listing</span><h2>Add a vintage piece</h2>{formError && <div style={{ color: '#dc2626', marginBottom: '1rem' }}>{formError}</div>}<form onSubmit={handleCreateProduct}>
         <div className="image-upload"><Icon name="plus" /><strong>Add product images</strong><span>Up to 8 images, JPG or PNG</span></div>
-        <div className="form-grid"><label className="wide">Product name<input required placeholder="e.g. 1960s ceramic table lamp" /></label><label>Category<select><option value="">Select category</option>{categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></label><label>Price<input required type="number" placeholder="0.00" /></label><label>Condition<select><option>Mint</option><option>Excellent</option><option>Good</option><option>Fair</option></select></label><label>Year / era<input placeholder="e.g. 1960s" /></label><label>Brand or maker<input placeholder="If known" /></label><label>Quantity<input type="number" defaultValue="1" /></label><label className="wide">Description<textarea required placeholder="Tell buyers what makes this piece special..." /></label><label className="wide">Authenticity information<textarea placeholder="Provenance, markings, expert inspection..." /></label></div>
-        <div className="modal-actions"><button type="button" className="button outline" onClick={() => setShowAdd(false)}>Save draft</button><button className="button primary" type="submit">Publish listing</button></div>
+        <div className="form-grid"><label className="wide">Product name<input name="productName" required placeholder="e.g. 1960s ceramic table lamp" /></label><label>Category<select name="categoryId"><option value="">Select category</option>{categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></label><label>Price<input name="price" required type="number" step="0.01" placeholder="0.00" /></label><label>Condition<select name="condition"><option value="Mint">Mint</option><option value="Excellent">Excellent</option><option value="Good">Good</option><option value="Fair">Fair</option></select></label><label>Year / era<input name="year" placeholder="e.g. 1960s" /></label><label>Quantity<input name="stock" type="number" defaultValue="1" min="1" /></label><label className="wide">Description<textarea name="description" required placeholder="Tell buyers what makes this piece special..." /></label><label className="wide">Authenticity information<textarea name="verified" placeholder="Provenance, markings, expert inspection..." /></label></div>
+        <div className="modal-actions"><button type="button" className="button outline" onClick={() => setShowAdd(false)} disabled={formLoading}>Cancel</button><button className="button primary" type="submit" disabled={formLoading}>{formLoading ? 'Creating...' : 'Publish listing'}</button></div>
       </form></div></div>}
     </main>
   );
@@ -855,7 +980,7 @@ export default function App() {
   else if (page === "confirmation") content = <Confirmation navigate={navigate} />;
   else if (page === "orders") content = <Orders />;
   else if (page === "profile") content = <Profile navigate={navigate} onLogout={handleLogout} profile={profile} updateProfile={updateProfile} user={user} />;
-  else if (page === "dashboard") content = <Dashboard navigate={navigate} products={products} loading={productsLoading} profile={profile} />;
+  else if (page === "dashboard") content = <Dashboard navigate={navigate} products={products} loading={productsLoading} profile={profile} user={user} />;
   else if (page === "products") content = <SellerProducts navigate={navigate} />;
   else if (page === "seller-orders") content = <Orders seller />;
   else if (page === "sales") content = <Sales products={products} />;
