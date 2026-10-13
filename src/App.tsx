@@ -46,10 +46,10 @@ export default function App() {
   const { products: sellerProducts, loading: sellerProductsLoading, refetch: refetchSellerProducts } = useProducts({ sellerId: user?.id });
 
   // Fetch wishlist for authenticated users
-  const { wishlist, toggleWishlist } = useWishlist(user?.id || null);
+  const { wishlist, toggleWishlist, loading: wishlistLoading, error: wishlistError } = useWishlist(user?.id || null);
 
   // Fetch cart for authenticated users
-  const { cart, addToCart: addToCartDb, removeFromCart: removeFromCartDb, cartCount } = useCart(user?.id || null);
+  const { cart, addToCart: addToCartDb, removeFromCart: removeFromCartDb, updateQuantity, cartCount, loading: cartLoading, error: cartError } = useCart(user?.id || null);
 
   const role = profile?.role || "buyer";
 
@@ -88,21 +88,47 @@ export default function App() {
     navigate("login");
   };
 
-  const toggleFavorite = (id: string) => {
+  const toggleFavorite = async (id: string) => {
     if (user) {
-      toggleWishlist(id);
+      try {
+        await toggleWishlist(id);
+      } catch (err) {
+        console.error('Error toggling wishlist:', err);
+        alert('Failed to update wishlist. Please try again.');
+      }
     }
   };
 
-  const addToCart = (product: Product) => {
+  const addToCart = async (product: Product) => {
     if (user) {
-      addToCartDb(product.id);
+      try {
+        await addToCartDb(product.id);
+      } catch (err: any) {
+        console.error('Error adding to cart:', err);
+        alert(err.message || 'Failed to add to cart. Please try again.');
+      }
     }
   };
 
-  const removeFromCart = (id: string) => {
+  const removeFromCart = async (id: string) => {
     if (user) {
-      removeFromCartDb(id);
+      try {
+        await removeFromCartDb(id);
+      } catch (err) {
+        console.error('Error removing from cart:', err);
+        alert('Failed to remove item from cart. Please try again.');
+      }
+    }
+  };
+
+  const handleUpdateQuantity = async (id: string, quantity: number) => {
+    if (user) {
+      try {
+        await updateQuantity(id, quantity);
+      } catch (err: any) {
+        console.error('Error updating quantity:', err);
+        alert(err.message || 'Failed to update quantity. Please try again.');
+      }
     }
   };
 
@@ -140,9 +166,9 @@ export default function App() {
   } else if (page === "product") {
     content = selectedProduct ? <ProductDetails product={selectedProduct} favorite={wishlist.includes(selectedProduct.id)} toggleFavorite={() => toggleFavorite(selectedProduct.id)} addToCart={() => addToCart(selectedProduct)} navigate={navigate} /> : null;
   } else if (page === "wishlist") {
-    content = <Wishlist navigate={navigate} favorites={wishlist} toggleFavorite={toggleFavorite} products={products} />;
+    content = <Wishlist navigate={navigate} favorites={wishlist} toggleFavorite={toggleFavorite} products={products} loading={wishlistLoading} error={wishlistError} />;
   } else if (page === "cart") {
-    content = <Cart items={cartProducts} remove={removeFromCart} navigate={navigate} />;
+    content = <Cart items={cartProducts} cartItems={cart} remove={removeFromCart} updateQuantity={handleUpdateQuantity} navigate={navigate} loading={cartLoading} error={cartError} />;
   } else if (page === "checkout") {
     content = <Checkout items={cartProducts.length ? cartProducts : products.slice(0, 1)} navigate={navigate} />;
   } else if (page === "confirmation") {

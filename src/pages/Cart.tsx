@@ -2,9 +2,38 @@ import { Icon } from '../components/Icon';
 import { Badge } from '../components/Badge';
 import { money } from '../lib/utils';
 import type { Page, Product } from '../types';
+import type { CartItem } from '../hooks/useCart';
 
-export function Cart({ items, remove, navigate }: { items: Product[]; remove: (id: string) => void; navigate: (page: Page) => void }) {
-  const subtotal = items.reduce((sum, item) => sum + item.price, 0);
+export function Cart({ items, cartItems, remove, updateQuantity, navigate, loading, error }: { items: Product[]; cartItems: CartItem[]; remove: (id: string) => void; updateQuantity: (id: string, quantity: number) => void; navigate: (page: Page) => void; loading: boolean; error: Error | null }) {
+  const subtotal = items.reduce((sum, item) => {
+    const cartItem = cartItems.find(ci => ci.product_id === item.id);
+    return sum + item.price * (cartItem?.quantity || 1);
+  }, 0);
+
+  if (loading) {
+    return (
+      <main className="inner-page narrow">
+        <div className="page-intro compact">
+          <span className="eyebrow">Your selection</span>
+          <h1>Shopping cart</h1>
+          <p>Loading your cart...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="inner-page narrow">
+        <div className="page-intro compact">
+          <span className="eyebrow">Your selection</span>
+          <h1>Shopping cart</h1>
+          <p>Error loading cart: {error.message}</p>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="inner-page narrow">
       <div className="page-intro compact">
@@ -22,18 +51,47 @@ export function Cart({ items, remove, navigate }: { items: Product[]; remove: (i
       ) : (
         <div className="cart-layout">
           <div className="cart-list">
-            {items.map((item) => (
-              <div className="cart-item" key={item.id}>
-                <img src={item.images?.[0] || ''} alt={item.name} />
-                <div>
-                  <span>{item.category_name || 'Uncategorized'}</span>
-                  <h3>{item.name}</h3>
-                  <Badge>{item.condition}</Badge>
-                  <button onClick={() => remove(item.id)}><Icon name="trash" size={16} /> Remove</button>
+            {items.map((item) => {
+              const cartItem = cartItems.find(ci => ci.product_id === item.id);
+              const quantity = cartItem?.quantity || 1;
+              const maxStock = item.stock;
+
+              return (
+                <div className="cart-item" key={item.id}>
+                  <img src={item.images?.[0] || ''} alt={item.name} />
+                  <div>
+                    <span>{item.category_name || 'Uncategorized'}</span>
+                    <h3>{item.name}</h3>
+                    <Badge>{item.condition}</Badge>
+                    <div className="quantity-controls">
+                      <button
+                        onClick={() => {
+                          const newQty = Math.max(1, quantity - 1);
+                          updateQuantity(item.id, newQty).catch(err => console.error(err));
+                        }}
+                        disabled={quantity <= 1}
+                        aria-label="Decrease quantity"
+                      >
+                        <Icon name="close" size={16} />
+                      </button>
+                      <span>{quantity}</span>
+                      <button
+                        onClick={() => {
+                          const newQty = Math.min(maxStock, quantity + 1);
+                          updateQuantity(item.id, newQty).catch(err => console.error(err));
+                        }}
+                        disabled={quantity >= maxStock}
+                        aria-label="Increase quantity"
+                      >
+                        <Icon name="plus" size={16} />
+                      </button>
+                    </div>
+                    <button onClick={() => remove(item.id)}><Icon name="trash" size={16} /> Remove</button>
+                  </div>
+                  <strong>{money(item.price * quantity)}</strong>
                 </div>
-                <strong>{money(item.price)}</strong>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <aside className="summary-card">
             <h2>Order summary</h2>

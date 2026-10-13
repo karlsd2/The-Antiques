@@ -56,7 +56,10 @@ export function useWishlist(userId: string | null) {
         product_id: productId,
       })
 
-    if (error) throw error
+    // Ignore duplicate key errors (product already in wishlist)
+    if (error && error.code !== '23505') {
+      throw error
+    }
     await fetchWishlist()
   }
 

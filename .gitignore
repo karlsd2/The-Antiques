@@ -13,7 +13,11 @@ logs/
 *.log
 .claude-replay.*
 .tmp-*
-
+.mise.toml
+AGENTS.md
+CLAUDE.md
+MIGRATION_GUIDE.md
+SUPABASE_SETUP.md
 # Platform-managed agentplat state, not project source. In the
 # client-initiated single-repo workspace layout (make's `Path: "."` spec) the
 # repo root IS the workspace root, so these land inside this repo rather than
