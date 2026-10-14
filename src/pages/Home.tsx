@@ -19,7 +19,6 @@ export function Home({ navigate, favorites, toggleFavorite, products, categories
           </div>
           <div className="hero-visual">
             <img src="https://images.unsplash.com/photo-1769647097480-84d4d8c1d501?auto=format&fit=crop&w=1200&q=88" alt="Curated vintage objects" />
-            <div className="hero-note" />
             <div className="round-stamp">AUTHENTIC • TIMELESS • FOUND •</div>
           </div>
         </section>
@@ -46,7 +45,6 @@ export function Home({ navigate, favorites, toggleFavorite, products, categories
           </div>
           <div className="hero-visual">
             <img src="https://images.unsplash.com/photo-1769647097480-84d4d8c1d501?auto=format&fit=crop&w=1200&q=88" alt="Curated vintage objects" />
-            <div className="hero-note" />
             <div className="round-stamp">AUTHENTIC • TIMELESS • FOUND •</div>
           </div>
         </section>
@@ -72,7 +70,6 @@ export function Home({ navigate, favorites, toggleFavorite, products, categories
         </div>
         <div className="hero-visual">
           <img src="https://images.unsplash.com/photo-1769647097480-84d4d8c1d501?auto=format&fit=crop&w=1200&q=88" alt="Curated vintage objects" />
-          <div className="hero-note" />
           <div className="round-stamp">AUTHENTIC • TIMELESS • FOUND •</div>
         </div>
       </section>
