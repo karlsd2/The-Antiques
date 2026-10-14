@@ -7,6 +7,7 @@ import type { CartItem } from '../hooks/useCart';
 export function Checkout({ items, cartItems, navigate, onSubmitOrder, isProcessing }: { items: Product[]; cartItems: CartItem[]; navigate: (page: Page) => void; onSubmitOrder: (formData: FormData) => Promise<void>; isProcessing: boolean }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Calculate quantities from cartItems
   const itemsWithQuantities = items.map(item => {
@@ -18,30 +19,82 @@ export function Checkout({ items, cartItems, navigate, onSubmitOrder, isProcessi
   });
 
   const subtotal = itemsWithQuantities.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const shippingCost = subtotal >= 500 ? 0 : 24;
+  // Shipping fee: configurable flat rate for Philippine orders (PHP)
+  // TODO: Integrate with actual courier API for real-time rates
+  const shippingCost = subtotal >= 5000 ? 0 : 150;
   const total = subtotal + shippingCost;
+
+  const validateMobileNumber = (mobile: string): boolean => {
+    const cleaned = mobile.replace(/\s/g, '');
+    // Accept formats: 09XXXXXXXXX (11 digits) or +639XXXXXXXXX (13 digits)
+    return /^09\d{9}$/.test(cleaned) || /^\+639\d{9}$/.test(cleaned);
+  };
+
+  const validatePostalCode = (postal: string): boolean => {
+    const cleaned = postal.trim();
+    // Philippine postal codes are 4 digits
+    return /^\d{4}$/.test(cleaned);
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setFieldErrors({});
 
     try {
       const formData = new FormData(e.currentTarget);
 
-      // Validate required fields
-      const firstName = formData.get('firstName') as string;
-      const lastName = formData.get('lastName') as string;
-      const streetAddress = formData.get('streetAddress') as string;
-      const city = formData.get('city') as string;
-      const state = formData.get('state') as string;
-      const zipCode = formData.get('zipCode') as string;
-      const country = formData.get('country') as string;
-      const email = formData.get('email') as string;
+      // Trim all values
+      const email = (formData.get('email') as string)?.trim();
+      const firstName = (formData.get('firstName') as string)?.trim();
+      const lastName = (formData.get('lastName') as string)?.trim();
+      const mobileNumber = (formData.get('mobileNumber') as string)?.trim();
+      const streetAddress = (formData.get('streetAddress') as string)?.trim();
+      const barangay = (formData.get('barangay') as string)?.trim();
+      const cityMunicipality = (formData.get('cityMunicipality') as string)?.trim();
+      const province = (formData.get('province') as string)?.trim();
+      const region = (formData.get('region') as string)?.trim();
+      const postalCode = (formData.get('postalCode') as string)?.trim();
 
-      if (!firstName || !lastName || !streetAddress || !city || !state || !zipCode || !country || !email) {
-        throw new Error('Please fill in all required fields');
+      const errors: Record<string, string> = {};
+
+      // Validate required fields
+      if (!email) errors.email = 'Email address is required';
+      if (!firstName) errors.firstName = 'First name is required';
+      if (!lastName) errors.lastName = 'Last name is required';
+      if (!mobileNumber) {
+        errors.mobileNumber = 'Mobile number is required';
+      } else if (!validateMobileNumber(mobileNumber)) {
+        errors.mobileNumber = 'Please enter a valid Philippine mobile number (e.g., 09123456789 or +639123456789)';
       }
+      if (!streetAddress) errors.streetAddress = 'Street address is required';
+      if (!barangay) errors.barangay = 'Barangay is required';
+      if (!cityMunicipality) errors.cityMunicipality = 'City/Municipality is required';
+      if (!province) errors.province = 'Province is required';
+      if (!region) errors.region = 'Region is required';
+      if (!postalCode) {
+        errors.postalCode = 'Postal code is required';
+      } else if (!validatePostalCode(postalCode)) {
+        errors.postalCode = 'Please enter a valid 4-digit Philippine postal code';
+      }
+
+      if (Object.keys(errors).length > 0) {
+        setFieldErrors(errors);
+        throw new Error('Please fix the errors above');
+      }
+
+      // Update formData with trimmed values
+      formData.set('email', email);
+      formData.set('firstName', firstName);
+      formData.set('lastName', lastName);
+      formData.set('mobileNumber', mobileNumber);
+      formData.set('streetAddress', streetAddress);
+      formData.set('barangay', barangay);
+      formData.set('cityMunicipality', cityMunicipality);
+      formData.set('province', province);
+      formData.set('region', region);
+      formData.set('postalCode', postalCode);
 
       // Validate product availability and stock
       for (const item of itemsWithQuantities) {
@@ -71,19 +124,67 @@ export function Checkout({ items, cartItems, navigate, onSubmitOrder, isProcessi
         {error && <div style={{ color: '#dc2626', marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#fef2f2', borderRadius: '4px' }}>{error}</div>}
         <form onSubmit={handleSubmit}>
           <h3>Contact</h3>
-          <div className="form-grid"><label className="wide">Email address<input name="email" required type="email" placeholder="you@example.com" /></label></div>
+          <div className="form-grid">
+            <label className="wide">
+              Email address
+              <input name="email" required type="email" placeholder="you@example.com" />
+              {fieldErrors.email && <span style={{ color: '#dc2626', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>{fieldErrors.email}</span>}
+            </label>
+            <label>
+              Mobile number
+              <input name="mobileNumber" required type="tel" placeholder="09123456789" />
+              {fieldErrors.mobileNumber && <span style={{ color: '#dc2626', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>{fieldErrors.mobileNumber}</span>}
+            </label>
+          </div>
           <h3>Shipping address</h3>
           <div className="form-grid">
-            <label>First name<input name="firstName" required placeholder="Maya" /></label>
-            <label>Last name<input name="lastName" required placeholder="Rivera" /></label>
-            <label className="wide">Street address<input name="streetAddress" required placeholder="123 Bedford Avenue" /></label>
-            <label>City<input name="city" required placeholder="Brooklyn" /></label>
-            <label>State<select name="state"><option>New York</option><option>California</option></select></label>
-            <label>ZIP code<input name="zipCode" required placeholder="11211" /></label>
-            <label>Country<select name="country"><option>United States</option><option>Canada</option></select></label>
+            <label>
+              First name
+              <input name="firstName" required placeholder="Juan" />
+              {fieldErrors.firstName && <span style={{ color: '#dc2626', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>{fieldErrors.firstName}</span>}
+            </label>
+            <label>
+              Last name
+              <input name="lastName" required placeholder="Dela Cruz" />
+              {fieldErrors.lastName && <span style={{ color: '#dc2626', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>{fieldErrors.lastName}</span>}
+            </label>
+            <label className="wide">
+              House Number / Street / Building
+              <input name="streetAddress" required placeholder="123 Main Street, Building A, Unit 5B" />
+              {fieldErrors.streetAddress && <span style={{ color: '#dc2626', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>{fieldErrors.streetAddress}</span>}
+            </label>
+            <label>
+              Barangay
+              <input name="barangay" required placeholder="Barangay name" />
+              {fieldErrors.barangay && <span style={{ color: '#dc2626', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>{fieldErrors.barangay}</span>}
+            </label>
+            <label>
+              City / Municipality
+              <input name="cityMunicipality" required placeholder="City or municipality" />
+              {fieldErrors.cityMunicipality && <span style={{ color: '#dc2626', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>{fieldErrors.cityMunicipality}</span>}
+            </label>
+            <label>
+              Province
+              <input name="province" required placeholder="Province" />
+              {fieldErrors.province && <span style={{ color: '#dc2626', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>{fieldErrors.province}</span>}
+            </label>
+            <label>
+              Region
+              <input name="region" required placeholder="Region (e.g., NCR, CALABARZON)" />
+              {fieldErrors.region && <span style={{ color: '#dc2626', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>{fieldErrors.region}</span>}
+            </label>
+            <label>
+              Postal Code
+              <input name="postalCode" required type="text" placeholder="1000" maxLength={4} />
+              {fieldErrors.postalCode && <span style={{ color: '#dc2626', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>{fieldErrors.postalCode}</span>}
+            </label>
           </div>
           <h3>Payment</h3>
-          <div className="payment-box"><label>Card number<input required placeholder="4242 4242 4242 4242" /></label><div><label>Expiration<input required placeholder="MM / YY" /></label><label>Security code<input required placeholder="CVC" /></label></div></div>
+          <div className="payment-info" style={{ padding: '1rem', backgroundColor: '#f3f4f6', borderRadius: '4px', marginBottom: '1rem' }}>
+            <p style={{ margin: '0', fontSize: '0.9rem', color: '#666' }}>
+              <Icon name="info" /> <strong>Demo Mode:</strong> No payment gateway is connected yet. Your order will be created as unpaid for demonstration purposes.
+            </p>
+          </div>
           <button className="button primary wide-button" type="submit" disabled={loading || isProcessing}>{loading || isProcessing ? 'Processing...' : `Place order · ${money(total)}`} <Icon name="arrow" /></button>
         </form>
       </div>

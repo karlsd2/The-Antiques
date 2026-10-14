@@ -15,9 +15,9 @@ export function Sales({ products }: { products: Product[] }) {
         <select><option>Last 6 months</option><option>This year</option></select>
       </div>
       <div className="stats-grid">
-        <div className="stat-card"><small>Gross sales</small><strong>$18,420</strong><p>+18.2% from last period</p></div>
-        <div className="stat-card"><small>Net earnings</small><strong>$16,578</strong><p>After marketplace fees</p></div>
-        <div className="stat-card"><small>Average order</small><strong>$146</strong><p>Across 126 sales</p></div>
+        <div className="stat-card"><small>Gross sales</small><strong>₱1,034,000</strong><p>+18.2% from last period</p></div>
+        <div className="stat-card"><small>Net earnings</small><strong>₱928,000</strong><p>After marketplace fees</p></div>
+        <div className="stat-card"><small>Average order</small><strong>₱8,200</strong><p>Across 126 sales</p></div>
         <div className="stat-card"><small>Conversion</small><strong>4.8%</strong><p>+0.6% improvement</p></div>
       </div>
       <div className="sales-chart table-card">

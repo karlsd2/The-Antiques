@@ -121,81 +121,22 @@ export function useOrders(userId: string | null, isSeller: boolean = false) {
     // Generate order number
     const orderNumber = `TA-${Date.now().toString().slice(-6)}`
 
-    // Try to use the atomic RPC function first
-    try {
-      const { data: order, error: rpcError } = await supabase.rpc('create_order_with_stock', {
-        p_buyer_id: buyerId,
-        p_order_number: orderNumber,
-        p_total: total,
-        p_shipping_cost: shippingCost,
-        p_shipping_address: shippingAddress,
-        p_items: items,
-      })
+    // Use the atomic RPC function for secure order creation
+    const { data: order, error: rpcError } = await supabase.rpc('create_order_with_stock', {
+      p_buyer_id: buyerId,
+      p_order_number: orderNumber,
+      p_total: total,
+      p_shipping_cost: shippingCost,
+      p_shipping_address: shippingAddress,
+      p_items: items,
+    })
 
-      if (rpcError) throw rpcError
-      return order
-    } catch (rpcError: any) {
-      // If RPC doesn't exist (PGRST116), fall back to client-side operations
-      if (rpcError.code === 'PGRST116') {
-        console.warn('RPC function not found, using client-side fallback. This is not safe for production.')
-
-        const { data: order, error: orderError } = await supabase
-          .from('orders')
-          .insert({
-            order_number: orderNumber,
-            buyer_id: buyerId,
-            total,
-            shipping_cost: shippingCost,
-            status: 'Confirmed',
-            shipping_address: shippingAddress,
-          })
-          .select()
-          .single()
-
-        if (orderError) throw orderError
-
-        // Insert order items
-        const { error: itemsError } = await supabase
-          .from('order_items')
-          .insert(
-            items.map((item) => ({
-              order_id: order.id,
-              product_id: item.product_id,
-              product_name: item.product_name,
-              product_condition: item.product_condition,
-              price: item.price,
-              quantity: item.quantity,
-            }))
-          )
-
-        if (itemsError) throw itemsError
-
-        // Decrement product stock for each item (client-side, not atomic)
-        for (const item of items) {
-          const { data: product, error: fetchError } = await supabase
-            .from('products')
-            .select('stock')
-            .eq('id', item.product_id)
-            .single();
-
-          if (fetchError) throw fetchError;
-
-          const currentStock = product?.stock || 0;
-          const newStock = Math.max(0, currentStock - item.quantity);
-
-          const { error: updateError } = await supabase
-            .from('products')
-            .update({ stock: newStock })
-            .eq('id', item.product_id);
-
-          if (updateError) throw updateError;
-        }
-
-        return order
-      } else {
-        throw rpcError
-      }
+    if (rpcError) {
+      console.error('RPC error:', rpcError)
+      throw new Error(rpcError.message || 'Failed to create order. Please ensure the create_order_with_stock function is deployed to Supabase.')
     }
+
+    return order
   }
 
   async function updateOrderStatus(orderId: string, status: Order['status']) {

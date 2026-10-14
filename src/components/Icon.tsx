@@ -17,6 +17,7 @@ const iconPaths: Record<string, React.ReactNode> = {
   close: <path d="m6 6 12 12M18 6 6 18" />,
   truck: <><path d="M3 6h11v11H3zM14 10h4l3 3v4h-7" /><circle cx="7" cy="19" r="2" /><circle cx="18" cy="19" r="2" /></>,
   signout: <><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" x2="9" y1="12" y2="12" /></>,
+  info: <><circle cx="12" cy="12" r="10" /><path d="M12 16v-4M12 8h.01" /></>,
 };
 
 export function Icon({ name, size = 20, filled = false }: { name: string; size?: number; filled?: boolean }) {

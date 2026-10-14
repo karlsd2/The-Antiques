@@ -96,10 +96,10 @@ export function Cart({ items, cartItems, remove, updateQuantity, navigate, loadi
           <aside className="summary-card">
             <h2>Order summary</h2>
             <div><span>Subtotal</span><strong>{money(subtotal)}</strong></div>
-            <div><span>Insured shipping</span><strong>{subtotal >= 500 ? "Complimentary" : "$24"}</strong></div>
+            <div><span>Insured shipping</span><strong>{subtotal >= 5000 ? "Complimentary" : money(150)}</strong></div>
             <div><span>Estimated tax</span><span>Calculated at checkout</span></div>
             <hr />
-            <div className="total"><span>Total</span><strong>{money(subtotal + (subtotal >= 500 ? 0 : 24))}</strong></div>
+            <div className="total"><span>Total</span><strong>{money(subtotal + (subtotal >= 5000 ? 0 : 150))}</strong></div>
             <button className="button primary" onClick={() => navigate("checkout")}>Proceed to checkout <Icon name="arrow" /></button>
             <small><Icon name="shield" size={14} /> Protected purchase guarantee</small>
           </aside>

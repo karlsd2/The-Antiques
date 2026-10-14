@@ -162,25 +162,30 @@ export default function App() {
 
       // Calculate totals from verified prices
       const subtotal = cartItemsWithProducts.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      const shippingCost = subtotal >= 500 ? 0 : 24;
+      // Shipping fee: configurable flat rate for Philippine orders (PHP)
+      // TODO: Integrate with actual courier API for real-time rates
+      const shippingCost = subtotal >= 5000 ? 0 : 150;
       const total = subtotal + shippingCost;
 
-      // Build shipping address from form data
+      // Build shipping address from form data (Philippine format with manual text inputs)
       const shippingAddress = {
+        email: formData.get('email') as string,
         first_name: formData.get('firstName') as string,
         last_name: formData.get('lastName') as string,
+        mobile_number: formData.get('mobileNumber') as string,
         street_address: formData.get('streetAddress') as string,
-        city: formData.get('city') as string,
-        state: formData.get('state') as string,
-        zip_code: formData.get('zipCode') as string,
-        country: formData.get('country') as string,
-        email: formData.get('email') as string,
+        barangay: formData.get('barangay') as string,
+        city_municipality: formData.get('cityMunicipality') as string,
+        province: formData.get('province') as string,
+        region: formData.get('region') as string,
+        postal_code: formData.get('postalCode') as string,
       };
 
-      // Validate shipping address
-      if (!shippingAddress.first_name || !shippingAddress.last_name || !shippingAddress.street_address ||
-          !shippingAddress.city || !shippingAddress.state || !shippingAddress.zip_code ||
-          !shippingAddress.country || !shippingAddress.email) {
+      // Validate shipping address (basic check - detailed validation in Checkout.tsx)
+      if (!shippingAddress.email || !shippingAddress.first_name || !shippingAddress.last_name ||
+          !shippingAddress.mobile_number || !shippingAddress.street_address || !shippingAddress.barangay ||
+          !shippingAddress.city_municipality || !shippingAddress.province || !shippingAddress.region ||
+          !shippingAddress.postal_code) {
         throw new Error('Please fill in all required fields');
       }
 
@@ -248,7 +253,13 @@ export default function App() {
   } else if (page === "cart") {
     content = <Cart items={cartProducts} cartItems={cart} remove={removeFromCart} updateQuantity={handleUpdateQuantity} navigate={navigate} loading={cartLoading} error={cartError} />;
   } else if (page === "checkout") {
-    content = <Checkout items={cartProducts.length ? cartProducts : products.slice(0, 1)} cartItems={cart} navigate={navigate} onSubmitOrder={handleCreateOrder} isProcessing={orderProcessing} />;
+    if (cartProducts.length === 0) {
+      setPage("cart");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      content = null;
+    } else {
+      content = <Checkout items={cartProducts} cartItems={cart} navigate={navigate} onSubmitOrder={handleCreateOrder} isProcessing={orderProcessing} />;
+    }
   } else if (page === "confirmation") {
     content = <Confirmation navigate={navigate} orderNumber={lastOrder?.order_number} />;
   } else if (page === "orders") {
