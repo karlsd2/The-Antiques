@@ -121,61 +121,81 @@ export function useOrders(userId: string | null, isSeller: boolean = false) {
     // Generate order number
     const orderNumber = `TA-${Date.now().toString().slice(-6)}`
 
-    const { data: order, error: orderError } = await supabase
-      .from('orders')
-      .insert({
-        order_number: orderNumber,
-        buyer_id: buyerId,
-        total,
-        shipping_cost: shippingCost,
-        status: 'Confirmed',
-        shipping_address: shippingAddress,
+    // Try to use the atomic RPC function first
+    try {
+      const { data: order, error: rpcError } = await supabase.rpc('create_order_with_stock', {
+        p_buyer_id: buyerId,
+        p_order_number: orderNumber,
+        p_total: total,
+        p_shipping_cost: shippingCost,
+        p_shipping_address: shippingAddress,
+        p_items: items,
       })
-      .select()
-      .single()
 
-    if (orderError) throw orderError
+      if (rpcError) throw rpcError
+      return order
+    } catch (rpcError: any) {
+      // If RPC doesn't exist (PGRST116), fall back to client-side operations
+      if (rpcError.code === 'PGRST116') {
+        console.warn('RPC function not found, using client-side fallback. This is not safe for production.')
 
-    // Insert order items
-    const { error: itemsError } = await supabase
-      .from('order_items')
-      .insert(
-        items.map((item) => ({
-          order_id: order.id,
-          product_id: item.product_id,
-          product_name: item.product_name,
-          product_condition: item.product_condition,
-          price: item.price,
-          quantity: item.quantity,
-        }))
-      )
+        const { data: order, error: orderError } = await supabase
+          .from('orders')
+          .insert({
+            order_number: orderNumber,
+            buyer_id: buyerId,
+            total,
+            shipping_cost: shippingCost,
+            status: 'Confirmed',
+            shipping_address: shippingAddress,
+          })
+          .select()
+          .single()
 
-    if (itemsError) throw itemsError
+        if (orderError) throw orderError
 
-    // Decrement product stock for each item
-    // NOTE: This is not atomic and could have race conditions in high-traffic scenarios.
-    // For production, this should be moved to a database function (RPC) with proper locking.
-    for (const item of items) {
-      const { data: product, error: fetchError } = await supabase
-        .from('products')
-        .select('stock')
-        .eq('id', item.product_id)
-        .single();
+        // Insert order items
+        const { error: itemsError } = await supabase
+          .from('order_items')
+          .insert(
+            items.map((item) => ({
+              order_id: order.id,
+              product_id: item.product_id,
+              product_name: item.product_name,
+              product_condition: item.product_condition,
+              price: item.price,
+              quantity: item.quantity,
+            }))
+          )
 
-      if (fetchError) throw fetchError;
+        if (itemsError) throw itemsError
 
-      const currentStock = product?.stock || 0;
-      const newStock = Math.max(0, currentStock - item.quantity);
+        // Decrement product stock for each item (client-side, not atomic)
+        for (const item of items) {
+          const { data: product, error: fetchError } = await supabase
+            .from('products')
+            .select('stock')
+            .eq('id', item.product_id)
+            .single();
 
-      const { error: updateError } = await supabase
-        .from('products')
-        .update({ stock: newStock })
-        .eq('id', item.product_id);
+          if (fetchError) throw fetchError;
 
-      if (updateError) throw updateError;
+          const currentStock = product?.stock || 0;
+          const newStock = Math.max(0, currentStock - item.quantity);
+
+          const { error: updateError } = await supabase
+            .from('products')
+            .update({ stock: newStock })
+            .eq('id', item.product_id);
+
+          if (updateError) throw updateError;
+        }
+
+        return order
+      } else {
+        throw rpcError
+      }
     }
-
-    return order
   }
 
   async function updateOrderStatus(orderId: string, status: Order['status']) {
