@@ -3,6 +3,7 @@ import { useAuth, type Profile } from "./hooks/useAuth";
 import { useProducts, useCategories } from "./hooks/useProducts";
 import { useWishlist } from "./hooks/useWishlist";
 import { useCart } from "./hooks/useCart";
+import { useOrders } from "./hooks/useOrders";
 import { Navbar } from "./components/Navbar";
 import type { Page, Product, Role } from "./types";
 
@@ -27,6 +28,8 @@ export default function App() {
   const { user, profile, loading: authLoading, signOut, updateProfile } = useAuth();
   const [page, setPage] = useState<Page>("login");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [lastOrder, setLastOrder] = useState<{ id: string; order_number: string } | null>(null);
+  const [orderProcessing, setOrderProcessing] = useState(false);
 
   // Navigate to appropriate page after auth loads (only if on auth pages)
   useEffect(() => {
@@ -49,7 +52,10 @@ export default function App() {
   const { wishlist, toggleWishlist, loading: wishlistLoading, error: wishlistError } = useWishlist(user?.id || null);
 
   // Fetch cart for authenticated users
-  const { cart, addToCart: addToCartDb, removeFromCart: removeFromCartDb, updateQuantity, cartCount, loading: cartLoading, error: cartError } = useCart(user?.id || null);
+  const { cart, addToCart: addToCartDb, removeFromCart: removeFromCartDb, updateQuantity, cartCount, loading: cartLoading, error: cartError, clearCart } = useCart(user?.id || null);
+
+  // Orders hook
+  const { createOrder } = useOrders(user?.id || null, false);
 
   const role = profile?.role || "buyer";
 
@@ -132,6 +138,78 @@ export default function App() {
     }
   };
 
+  const handleCreateOrder = async (formData: FormData) => {
+    if (!user) {
+      alert('You must be logged in to place an order');
+      return;
+    }
+
+    try {
+      setOrderProcessing(true);
+
+      // Get cart items with full product data
+      const cartItemsWithProducts = cart.map(item => ({
+        product_id: item.product_id,
+        product_name: item.product?.name || '',
+        product_condition: item.product?.condition || null,
+        price: item.product?.price || 0,
+        quantity: item.quantity,
+      }));
+
+      if (cartItemsWithProducts.length === 0) {
+        throw new Error('Your cart is empty');
+      }
+
+      // Calculate totals from verified prices
+      const subtotal = cartItemsWithProducts.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const shippingCost = subtotal >= 500 ? 0 : 24;
+      const total = subtotal + shippingCost;
+
+      // Build shipping address from form data
+      const shippingAddress = {
+        first_name: formData.get('firstName') as string,
+        last_name: formData.get('lastName') as string,
+        street_address: formData.get('streetAddress') as string,
+        city: formData.get('city') as string,
+        state: formData.get('state') as string,
+        zip_code: formData.get('zipCode') as string,
+        country: formData.get('country') as string,
+        email: formData.get('email') as string,
+      };
+
+      // Validate shipping address
+      if (!shippingAddress.first_name || !shippingAddress.last_name || !shippingAddress.street_address ||
+          !shippingAddress.city || !shippingAddress.state || !shippingAddress.zip_code ||
+          !shippingAddress.country || !shippingAddress.email) {
+        throw new Error('Please fill in all required fields');
+      }
+
+      // Create order via Supabase
+      const order = await createOrder(
+        user.id,
+        cartItemsWithProducts,
+        shippingAddress,
+        total,
+        shippingCost
+      );
+
+      // Store order for confirmation page
+      setLastOrder({ id: order.id, order_number: order.order_number });
+
+      // Clear cart after successful order
+      await clearCart();
+
+      // Navigate to confirmation
+      setPage("confirmation");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err: any) {
+      console.error('Error creating order:', err);
+      alert(err.message || 'Failed to place order. Please try again.');
+    } finally {
+      setOrderProcessing(false);
+    }
+  };
+
   const authPage = page === "login" || page === "register" || page === "forgot";
 
   if (authLoading) {
@@ -170,9 +248,9 @@ export default function App() {
   } else if (page === "cart") {
     content = <Cart items={cartProducts} cartItems={cart} remove={removeFromCart} updateQuantity={handleUpdateQuantity} navigate={navigate} loading={cartLoading} error={cartError} />;
   } else if (page === "checkout") {
-    content = <Checkout items={cartProducts.length ? cartProducts : products.slice(0, 1)} navigate={navigate} />;
+    content = <Checkout items={cartProducts.length ? cartProducts : products.slice(0, 1)} cartItems={cart} navigate={navigate} onSubmitOrder={handleCreateOrder} isProcessing={orderProcessing} />;
   } else if (page === "confirmation") {
-    content = <Confirmation navigate={navigate} />;
+    content = <Confirmation navigate={navigate} orderNumber={lastOrder?.order_number} />;
   } else if (page === "orders") {
     content = <Orders />;
   } else if (page === "profile") {

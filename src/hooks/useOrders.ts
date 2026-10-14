@@ -61,7 +61,8 @@ export function useOrders(userId: string | null, isSeller: boolean = false) {
           .from('orders')
           .select(`
             *,
-            order_items (*, products!order_items_product_id_fkey (seller_id))
+            order_items (*, products!order_items_product_id_fkey (seller_id)),
+            profiles!orders_buyer_id_fkey (full_name)
           `)
           .order('created_at', { ascending: false })
 
@@ -72,7 +73,10 @@ export function useOrders(userId: string | null, isSeller: boolean = false) {
         // Filter orders that have products from this seller
         const sellerOrders = (data || []).filter((order: any) =>
           order.order_items?.some((item: any) => item.products?.seller_id === userId)
-        )
+        ).map((order: any) => ({
+          ...order,
+          buyer_name: order.profiles?.full_name,
+        }))
 
         setOrders(sellerOrders)
       } else {
@@ -147,6 +151,29 @@ export function useOrders(userId: string | null, isSeller: boolean = false) {
       )
 
     if (itemsError) throw itemsError
+
+    // Decrement product stock for each item
+    // NOTE: This is not atomic and could have race conditions in high-traffic scenarios.
+    // For production, this should be moved to a database function (RPC) with proper locking.
+    for (const item of items) {
+      const { data: product, error: fetchError } = await supabase
+        .from('products')
+        .select('stock')
+        .eq('id', item.product_id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const currentStock = product?.stock || 0;
+      const newStock = Math.max(0, currentStock - item.quantity);
+
+      const { error: updateError } = await supabase
+        .from('products')
+        .update({ stock: newStock })
+        .eq('id', item.product_id);
+
+      if (updateError) throw updateError;
+    }
 
     return order
   }
