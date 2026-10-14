@@ -151,9 +151,9 @@ export default function App() {
       // Get cart items with full product data
       const cartItemsWithProducts = cart.map(item => ({
         product_id: item.product_id,
-        product_name: item.product?.name || '',
-        product_condition: item.product?.condition || null,
-        price: item.product?.price || 0,
+        product_name: item.products?.name || '',
+        product_condition: item.products?.condition || null,
+        price: item.products?.price || 0,
         quantity: item.quantity,
       }));
 

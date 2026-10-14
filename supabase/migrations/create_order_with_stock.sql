@@ -22,11 +22,27 @@ DECLARE
   v_product_id UUID;
   v_quantity INTEGER;
   v_item_price NUMERIC;
+  v_item_name TEXT;
+  v_item_condition TEXT;
   v_calculated_total NUMERIC := 0;
+  v_item_count INTEGER;
 BEGIN
   -- Security: Verify the buyer_id matches the authenticated user
   IF p_buyer_id != auth.uid() THEN
     RAISE EXCEPTION 'Unauthorized: buyer_id does not match authenticated user';
+  END IF;
+
+  -- Validate items array is not empty
+  IF p_items IS NULL OR jsonb_array_length(p_items) = 0 THEN
+    RAISE EXCEPTION 'Items array cannot be empty';
+  END IF;
+
+  -- Check for duplicate product IDs
+  SELECT COUNT(DISTINCT (item->>'product_id')::UUID) INTO v_item_count
+  FROM jsonb_array_elements(p_items) AS item;
+
+  IF v_item_count != jsonb_array_length(p_items) THEN
+    RAISE EXCEPTION 'Duplicate product IDs in items array';
   END IF;
 
   -- Calculate total from actual product prices in database
@@ -34,8 +50,13 @@ BEGIN
     v_product_id := (v_item->>'product_id')::UUID;
     v_quantity := (v_item->>'quantity')::INTEGER;
 
-    -- Get actual product price from database
-    SELECT price INTO v_item_price
+    -- Validate quantity is at least 1
+    IF v_quantity < 1 THEN
+      RAISE EXCEPTION 'Quantity must be at least 1 for product %', v_product_id;
+    END IF;
+
+    -- Get actual product data from database
+    SELECT price, name, condition INTO v_item_price, v_item_name, v_item_condition
     FROM products
     WHERE id = v_product_id AND status = 'active';
 
@@ -52,9 +73,10 @@ BEGIN
     v_calculated_total := v_calculated_total + (v_item_price * v_quantity);
   END LOOP;
 
-  -- Verify total matches calculated total
-  IF ABS(p_total - v_calculated_total) > 0.01 THEN
-    RAISE EXCEPTION 'Total mismatch. Client: %, Calculated: %', p_total, v_calculated_total;
+  -- Verify total matches calculated total (p_total includes shipping)
+  IF ABS(p_total - (v_calculated_total + p_shipping_cost)) > 0.01 THEN
+    RAISE EXCEPTION 'Total mismatch. Client: % (subtotal: %, shipping: %), Calculated: %',
+      p_total, v_calculated_total, p_shipping_cost, v_calculated_total + p_shipping_cost;
   END IF;
 
   -- Create order
@@ -67,14 +89,19 @@ BEGIN
     v_product_id := (v_item->>'product_id')::UUID;
     v_quantity := (v_item->>'quantity')::INTEGER;
 
-    -- Insert order item
+    -- Re-fetch product data to ensure we use database values
+    SELECT price, name, condition INTO v_item_price, v_item_name, v_item_condition
+    FROM products
+    WHERE id = v_product_id AND status = 'active';
+
+    -- Insert order item using database values, not client-provided
     INSERT INTO order_items (order_id, product_id, product_name, product_condition, price, quantity)
     VALUES (
       v_order.id,
       v_product_id,
-      v_item->>'product_name',
-      v_item->>'product_condition',
-      (v_item->>'price')::NUMERIC,
+      v_item_name,
+      v_item_condition,
+      v_item_price,
       v_quantity
     );
 
@@ -92,5 +119,5 @@ BEGIN
 END;
 $$;
 
--- Grant execute permission to authenticated users
+-- Grant execute permission to authenticated users only
 GRANT EXECUTE ON FUNCTION create_order_with_stock TO authenticated;
