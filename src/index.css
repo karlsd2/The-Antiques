@@ -54,9 +54,6 @@ header nav > button.active:after, header nav > button:hover:after { right: 0; }
 .hero-trust svg { color: var(--sage); width: 17px; }
 .hero-visual { position: relative; padding: 42px 50px 42px 0; }
 .hero-visual > img { width: 100%; height: 100%; max-height: 620px; object-fit: cover; filter: saturate(.72) sepia(.12); }
-.hero-note { position: absolute; bottom: 66px; left: -58px; background: var(--paper); box-shadow: var(--shadow); padding: 22px 25px; min-width: 220px; }
-.hero-note small, .hero-note span { display: block; color: var(--ink-soft); font-size: 10px; }
-.hero-note strong { display: block; font-family: "Playfair Display", serif; margin: 6px 0; }
 .round-stamp { position: absolute; right: 18px; top: 20px; width: 94px; height: 94px; border: 1px solid var(--ink); border-radius: 50%; display: grid; place-items: center; text-align: center; padding: 18px; background: var(--peach-light); font-size: 8px; letter-spacing: .15em; line-height: 2; transform: rotate(9deg); }
 .page-section, .category-section, .story-section, .inner-page { padding: clamp(70px, 8vw, 118px) clamp(24px, 6vw, 88px); }
 .section-heading { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 38px; }
@@ -339,7 +336,6 @@ footer > small { position: absolute; left: clamp(24px, 6vw, 88px); bottom: 25px;
   .hero-content { padding: 65px 24px 48px; }
   .hero h1 { font-size: 53px; }
   .hero-visual { height: 500px; padding: 0 24px 40px; }
-  .hero-note { left: 38px; bottom: 20px; }
   .round-stamp { right: 7px; top: -22px; }
   .hero-trust { flex-direction: column; gap: 12px; margin-top: 35px; }
   .page-section, .category-section, .story-section, .inner-page { padding: 70px 20px; }
