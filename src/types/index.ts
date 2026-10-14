@@ -33,6 +33,7 @@ export type Product = {
   price: number;
   category_id: string | null;
   category_name?: string;
+  categories?: { name: string };
   condition: "Mint" | "Excellent" | "Good" | "Fair";
   year: string | null;
   verified: string;

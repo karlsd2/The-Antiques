@@ -1,24 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-
-export interface Product {
-  id: string
-  seller_id: string
-  name: string
-  price: number
-  category_id: string | null
-  category_name?: string
-  condition: 'Mint' | 'Excellent' | 'Good' | 'Fair'
-  year: string | null
-  verified: string
-  stock: number
-  description: string | null
-  images: string[]
-  status: 'active' | 'draft' | 'sold'
-  seller_name?: string
-  created_at: string
-  updated_at: string
-}
+import type { Product } from '../types'
 
 export interface CartItem {
   id: string
@@ -27,7 +9,7 @@ export interface CartItem {
   quantity: number
   created_at: string
   updated_at: string
-  product?: Product
+  products?: Product  // Supabase returns nested data under 'products' key
 }
 
 export function useCart(userId: string | null) {
@@ -55,11 +37,25 @@ export function useCart(userId: string | null) {
         .from('cart')
         .select(`
           *,
-          products (*)
+          products (*, categories (name))
         `)
         .eq('user_id', userId)
 
       if (error) throw error
+
+      // Diagnostic logging for cart data
+      console.log(`[Cart Fetch] Retrieved ${data?.length || 0} cart items for user`);
+      console.log(`[Cart Fetch] Raw data structure:`, data);
+      data?.forEach((cartItem, index) => {
+        console.log(`[Cart Fetch] Item ${index + 1}: cart_id=${cartItem.id}, product_id=${cartItem.product_id}, quantity=${cartItem.quantity}`);
+        console.log(`[Cart Fetch] Full cart item object:`, cartItem);
+        if (!cartItem.products) {
+          console.warn(`[Cart Fetch] Product data missing for cart item ${cartItem.id}, product_id=${cartItem.product_id}`);
+        } else {
+          console.log(`[Cart Fetch] Product data: name="${cartItem.products.name}", price=${cartItem.products.price}, stock=${cartItem.products.stock}, status=${cartItem.products.status}`);
+        }
+      });
+
       setCart(data || [])
     } catch (err) {
       setError(err as Error)
@@ -165,10 +161,27 @@ export function useCart(userId: string | null) {
   }
 
   const cartTotal = cart.reduce((sum, item) => {
-    return sum + (item.product?.price || 0) * item.quantity
+    return sum + (item.products?.price || 0) * item.quantity
   }, 0)
 
-  const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0)
+  // Total count (all items including invalid)
+  const totalCount = cart.reduce((sum, item) => sum + item.quantity, 0)
+
+  // Valid count (only items with valid product data)
+  const validCount = cart.reduce((sum, item) => {
+    const hasValidProduct = item.products?.name && item.products?.price > 0 && item.products?.stock > 0;
+
+    // Diagnostic logging for invalid items (without sensitive user data)
+    if (!hasValidProduct) {
+      const reasons = [];
+      if (!item.products?.name) reasons.push('missing name');
+      if (!item.products?.price || item.products.price <= 0) reasons.push(`invalid price: ${item.products?.price}`);
+      if (!item.products?.stock || item.products.stock <= 0) reasons.push(`invalid stock: ${item.products?.stock}`);
+      console.warn(`[Cart Validation] Cart item ${item.id} (product: ${item.product_id}) is invalid: ${reasons.join(', ')}`);
+    }
+
+    return hasValidProduct ? sum + item.quantity : sum;
+  }, 0)
 
   return {
     cart,
@@ -179,7 +192,8 @@ export function useCart(userId: string | null) {
     updateQuantity,
     clearCart,
     cartTotal,
-    cartCount,
+    cartCount: validCount,
+    totalCount,
     refetch: fetchCart,
   }
 }

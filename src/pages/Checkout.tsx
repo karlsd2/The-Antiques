@@ -45,6 +45,19 @@ export function Checkout({ items, cartItems, navigate, onSubmitOrder, isProcessi
     try {
       const formData = new FormData(e.currentTarget);
 
+      // Validate product data before proceeding
+      for (const item of itemsWithQuantities) {
+        if (!item.name || item.price <= 0) {
+          throw new Error(`"${item.name || 'Unknown product'}" has invalid data. Please remove it from your cart.`);
+        }
+        if (item.stock < item.quantity) {
+          throw new Error(`Only ${item.stock} of "${item.name}" available. You requested ${item.quantity}.`);
+        }
+        if (item.status !== 'active') {
+          throw new Error(`"${item.name}" is no longer available`);
+        }
+      }
+
       // Trim all values
       const email = (formData.get('email') as string)?.trim();
       const firstName = (formData.get('firstName') as string)?.trim();
@@ -95,16 +108,6 @@ export function Checkout({ items, cartItems, navigate, onSubmitOrder, isProcessi
       formData.set('province', province);
       formData.set('region', region);
       formData.set('postalCode', postalCode);
-
-      // Validate product availability and stock
-      for (const item of itemsWithQuantities) {
-        if (item.stock < item.quantity) {
-          throw new Error(`Only ${item.stock} of "${item.name}" available. You requested ${item.quantity}.`);
-        }
-        if (item.status !== 'active') {
-          throw new Error(`"${item.name}" is no longer available`);
-        }
-      }
 
       // Call the order creation handler passed from App.tsx
       await onSubmitOrder(formData);

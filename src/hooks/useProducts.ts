@@ -1,24 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-
-export interface Product {
-  id: string
-  seller_id: string
-  name: string
-  price: number
-  category_id: string | null
-  category_name?: string
-  condition: 'Mint' | 'Excellent' | 'Good' | 'Fair'
-  year: string | null
-  verified: string
-  stock: number
-  description: string | null
-  images: string[]
-  status: 'active' | 'draft' | 'sold'
-  seller_name?: string
-  created_at: string
-  updated_at: string
-}
+import type { Product } from '../types'
 
 export interface Category {
   id: string

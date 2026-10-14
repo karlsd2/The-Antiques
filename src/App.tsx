@@ -5,7 +5,8 @@ import { useWishlist } from "./hooks/useWishlist";
 import { useCart } from "./hooks/useCart";
 import { useOrders } from "./hooks/useOrders";
 import { Navbar } from "./components/Navbar";
-import type { Page, Product, Role } from "./types";
+import type { Page, Role } from "./types";
+import type { Product } from "./types";
 
 // Page imports
 import { Home } from "./pages/Home";
@@ -52,7 +53,7 @@ export default function App() {
   const { wishlist, toggleWishlist, loading: wishlistLoading, error: wishlistError } = useWishlist(user?.id || null);
 
   // Fetch cart for authenticated users
-  const { cart, addToCart: addToCartDb, removeFromCart: removeFromCartDb, updateQuantity, cartCount, loading: cartLoading, error: cartError, clearCart } = useCart(user?.id || null);
+  const { cart, addToCart: addToCartDb, removeFromCart: removeFromCartDb, updateQuantity, cartCount, totalCount, loading: cartLoading, error: cartError, clearCart } = useCart(user?.id || null);
 
   // Orders hook
   const { createOrder } = useOrders(user?.id || null, false);
@@ -222,24 +223,35 @@ export default function App() {
   }
 
   // Convert cart items to Product format for components
-  const cartProducts: Product[] = cart.map(item => ({
-    id: item.product_id,
-    seller_id: item.product?.seller_id || '',
-    name: item.product?.name || '',
-    price: item.product?.price || 0,
-    category_id: item.product?.category_id || null,
-    category_name: item.product?.category_name,
-    condition: item.product?.condition || 'Good',
-    year: item.product?.year || null,
-    verified: item.product?.verified || 'Pending',
-    stock: item.product?.stock || 0,
-    description: item.product?.description || null,
-    images: item.product?.images || [],
-    status: item.product?.status || 'active',
-    seller_name: item.product?.seller_name,
-    created_at: item.product?.created_at || '',
-    updated_at: item.product?.updated_at || '',
-  }));
+  const cartProducts: Product[] = cart.map(item => {
+    // Diagnostic logging for missing product data
+    if (!item.products) {
+      console.warn(`[App.tsx] Cart item ${item.id} has no product data. Product ID: ${item.product_id}`);
+    } else {
+      if (!item.products.name) console.warn(`[App.tsx] Product ${item.product_id} has missing name`);
+      if (!item.products.price || item.products.price <= 0) console.warn(`[App.tsx] Product ${item.product_id} has invalid price: ${item.products.price}`);
+      if (!item.products.stock || item.products.stock <= 0) console.warn(`[App.tsx] Product ${item.product_id} has invalid stock: ${item.products.stock}`);
+    }
+
+    return {
+      id: item.product_id,
+      seller_id: item.products?.seller_id || '',
+      name: item.products?.name || '',
+      price: item.products?.price || 0,
+      category_id: item.products?.category_id || null,
+      category_name: item.products?.categories?.name || item.products?.category_name,
+      condition: item.products?.condition || 'Good',
+      year: item.products?.year || null,
+      verified: item.products?.verified || 'Pending',
+      stock: item.products?.stock || 0,
+      description: item.products?.description || null,
+      images: item.products?.images || [],
+      status: item.products?.status || 'active',
+      seller_name: item.products?.seller_name,
+      created_at: item.products?.created_at || '',
+      updated_at: item.products?.updated_at || '',
+    };
+  });
 
   let content: React.ReactNode;
   if (page === "home") {
@@ -251,7 +263,7 @@ export default function App() {
   } else if (page === "wishlist") {
     content = <Wishlist navigate={navigate} favorites={wishlist} toggleFavorite={toggleFavorite} products={products} loading={wishlistLoading} error={wishlistError} />;
   } else if (page === "cart") {
-    content = <Cart items={cartProducts} cartItems={cart} remove={removeFromCart} updateQuantity={handleUpdateQuantity} navigate={navigate} loading={cartLoading} error={cartError} />;
+    content = <Cart items={cartProducts} cartItems={cart} remove={removeFromCart} updateQuantity={handleUpdateQuantity} navigate={navigate} loading={cartLoading} error={cartError} totalCount={totalCount} />;
   } else if (page === "checkout") {
     if (cartProducts.length === 0) {
       setPage("cart");
