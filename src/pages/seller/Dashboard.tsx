@@ -6,8 +6,13 @@ import { useAuth } from '../../hooks/useAuth';
 import { useOrders } from '../../hooks/useOrders';
 
 export function Dashboard({ navigate, products, loading, profile, user, refetch }: { navigate: (page: Page) => void; products: Product[]; loading: boolean; profile: Profile | null; user: any; refetch: () => void }) {
-  const { orders, loading: ordersLoading } = useOrders(user?.id || null, true);
+  const { orders, loading: ordersLoading, error: ordersError } = useOrders(user?.id || null, true);
   const storeName = profile?.store_name || profile?.full_name || 'Seller';
+
+  // Log error if present
+  if (ordersError) {
+    console.error('[Dashboard] Error fetching orders:', ordersError);
+  }
 
   // Calculate real metrics
   const totalProducts = products.length;

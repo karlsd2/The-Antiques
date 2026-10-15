@@ -56,26 +56,46 @@ export function useOrders(userId: string | null, isSeller: boolean = false) {
         `)
 
       if (isSeller) {
-        // For sellers, get orders that contain their products
-        query = supabase
+        // For sellers, fetch orders and order_items separately to avoid RLS circular dependency
+        // First, get the seller's product IDs
+        const { data: sellerProducts, error: productsError } = await supabase
+          .from('products')
+          .select('id')
+          .eq('seller_id', userId)
+          .eq('status', 'active')
+
+        if (productsError) throw productsError
+
+        const sellerProductIds = sellerProducts?.map(p => p.id) || []
+
+        // Then fetch order_items directly for these products
+        const { data: orderItems, error: itemsError } = await supabase
+          .from('order_items')
+          .select('*')
+          .in('product_id', sellerProductIds)
+
+        if (itemsError) throw itemsError
+
+        // Get unique order IDs from order_items
+        const orderIds = [...new Set(orderItems?.map(oi => oi.order_id) || [])]
+
+        // Fetch orders for these order IDs
+        const { data: ordersData, error: ordersError } = await supabase
           .from('orders')
           .select(`
             *,
-            order_items (*, products!order_items_product_id_fkey (seller_id)),
             profiles!orders_buyer_id_fkey (full_name)
           `)
+          .in('id', orderIds)
           .order('created_at', { ascending: false })
 
-        const { data, error } = await query
+        if (ordersError) throw ordersError
 
-        if (error) throw error
-
-        // Filter orders that have products from this seller
-        const sellerOrders = (data || []).filter((order: any) =>
-          order.order_items?.some((item: any) => item.products?.seller_id === userId)
-        ).map((order: any) => ({
+        // Manually assemble the orders with their items
+        const sellerOrders = (ordersData || []).map((order: any) => ({
           ...order,
           buyer_name: order.profiles?.full_name,
+          items: orderItems?.filter((oi: any) => oi.order_id === order.id) || []
         }))
 
         setOrders(sellerOrders)
