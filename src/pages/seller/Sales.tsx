@@ -2,8 +2,34 @@ import { Icon } from '../../components/Icon';
 import { Badge } from '../../components/Badge';
 import { money } from '../../lib/utils';
 import type { Product } from '../../types';
+import { useAuth } from '../../hooks/useAuth';
+import { useOrders } from '../../hooks/useOrders';
 
 export function Sales({ products }: { products: Product[] }) {
+  const { user } = useAuth();
+  const { orders, loading } = useOrders(user?.id || null, true);
+
+  // Calculate metrics from actual order data
+  const totalOrders = orders.length;
+  const totalItemsSold = orders.reduce((sum, order) => {
+    return sum + (order.items?.reduce((itemSum, item) => itemSum + item.quantity, 0) || 0);
+  }, 0);
+
+  const grossSales = orders.reduce((sum, order) => {
+    return sum + (order.items?.reduce((itemSum, item) => itemSum + (item.price * item.quantity), 0) || 0);
+  }, 0);
+
+  // Assuming 10% marketplace fee for net earnings
+  const marketplaceFee = grossSales * 0.10;
+  const netEarnings = grossSales - marketplaceFee;
+
+  const averageOrder = totalOrders > 0 ? grossSales / totalOrders : 0;
+
+  // Conversion rate: (orders / total product views) - since we don't track views,
+  // we'll calculate it as orders per active product as a placeholder
+  const activeProducts = products.filter(p => p.status === 'active').length;
+  const conversionRate = activeProducts > 0 ? (totalOrders / activeProducts) * 100 : 0;
+
   return (
     <main className="inner-page">
       <div className="dashboard-title">
@@ -15,10 +41,26 @@ export function Sales({ products }: { products: Product[] }) {
         <select><option>Last 6 months</option><option>This year</option></select>
       </div>
       <div className="stats-grid">
-        <div className="stat-card"><small>Gross sales</small><strong>₱1,034,000</strong><p>+18.2% from last period</p></div>
-        <div className="stat-card"><small>Net earnings</small><strong>₱928,000</strong><p>After marketplace fees</p></div>
-        <div className="stat-card"><small>Average order</small><strong>₱8,200</strong><p>Across 126 sales</p></div>
-        <div className="stat-card"><small>Conversion</small><strong>4.8%</strong><p>+0.6% improvement</p></div>
+        <div className="stat-card">
+          <small>Gross sales</small>
+          <strong>{loading ? '...' : money(grossSales)}</strong>
+          <p>{totalItemsSold} items sold</p>
+        </div>
+        <div className="stat-card">
+          <small>Net earnings</small>
+          <strong>{loading ? '...' : money(netEarnings)}</strong>
+          <p>After 10% marketplace fee</p>
+        </div>
+        <div className="stat-card">
+          <small>Average order</small>
+          <strong>{loading ? '...' : money(averageOrder)}</strong>
+          <p>Across {totalOrders} sales</p>
+        </div>
+        <div className="stat-card">
+          <small>Conversion</small>
+          <strong>{loading ? '...' : conversionRate.toFixed(1)}%</strong>
+          <p>Orders per active product</p>
+        </div>
       </div>
       <div className="sales-chart table-card">
         <div className="panel-heading">
