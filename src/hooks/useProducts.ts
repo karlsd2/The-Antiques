@@ -46,7 +46,8 @@ export function useProducts(filters?: {
 
       if (filters?.status) {
         query = query.eq('status', filters.status)
-      } else {
+      } else if (!filters?.sellerId) {
+        // Only filter by active status if not viewing seller's own products
         query = query.eq('status', 'active')
       }
 
@@ -148,7 +149,7 @@ export async function createProduct(product: Omit<Product, 'id' | 'created_at' |
   return data
 }
 
-export async function updateProduct(id: string, updates: Partial<Product>) {
+export async function updateProduct(id: string, updates: Partial<Omit<Product, 'id' | 'created_at' | 'updated_at' | 'seller_name' | 'category_name'>>) {
   const { data, error } = await supabase
     .from('products')
     .update(updates)
