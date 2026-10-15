@@ -1,11 +1,38 @@
+import { useState } from 'react';
 import { Icon } from '../components/Icon';
 import { money } from '../lib/utils';
 import { useAuth } from '../hooks/useAuth';
 import { useOrders } from '../hooks/useOrders';
+import type { Order } from '../hooks/useOrders';
 
 export function Orders({ seller = false }: { seller?: boolean }) {
   const { user } = useAuth();
-  const { orders, loading, error } = useOrders(user?.id || null, seller);
+  const { orders, loading, error, updateOrderStatus } = useOrders(user?.id || null, seller);
+  const [updatingOrder, setUpdatingOrder] = useState<Order | null>(null);
+  const [updateLoading, setUpdateLoading] = useState(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+
+  const handleUpdateClick = (order: Order) => {
+    setUpdatingOrder(order);
+    setUpdateError(null);
+  };
+
+  const handleStatusChange = async (newStatus: Order['status']) => {
+    if (!updatingOrder) return;
+
+    setUpdateLoading(true);
+    setUpdateError(null);
+
+    try {
+      await updateOrderStatus(updatingOrder.id, newStatus);
+      setUpdatingOrder(null);
+    } catch (err: any) {
+      setUpdateError(err.message || 'Failed to update order status');
+    } finally {
+      setUpdateLoading(false);
+    }
+  };
+
   return (
     <main className="inner-page">
       <div className="dashboard-title">
@@ -43,12 +70,46 @@ export function Orders({ seller = false }: { seller?: boolean }) {
                 <span>{new Date(order.created_at).toLocaleDateString()}</span>
                 <span>{money(order.total)}</span>
                 <span><i className={`status ${order.status.toLowerCase()}`}>{order.status}</i></span>
-                <button>{seller ? "Update" : "View"} <Icon name="chevron" size={14} /></button>
+                <button onClick={() => seller && handleUpdateClick(order)}>{seller ? "Update" : "View"} <Icon name="chevron" size={14} /></button>
               </div>
             ))
           )}
         </div>
       </div>
+      {updatingOrder && (
+        <div className="modal-backdrop" onClick={() => setUpdatingOrder(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setUpdatingOrder(null)}><Icon name="close" /></button>
+            <span className="eyebrow">Update order status</span>
+            <h2>{updatingOrder.order_number}</h2>
+            {updateError && <div style={{ color: '#dc2626', marginBottom: '1rem' }}>{updateError}</div>}
+            <div className="form-grid">
+              <label>
+                Current status
+                <input value={updatingOrder.status} disabled />
+              </label>
+              <label>
+                New status
+                <select
+                  value=""
+                  onChange={(e) => handleStatusChange(e.target.value as Order['status'])}
+                  disabled={updateLoading}
+                >
+                  <option value="">Select new status</option>
+                  <option value="Confirmed">Confirmed</option>
+                  <option value="Processing">Processing</option>
+                  <option value="Shipped">Shipped</option>
+                  <option value="Delivered">Delivered</option>
+                  <option value="Cancelled">Cancelled</option>
+                </select>
+              </label>
+            </div>
+            <div className="modal-actions">
+              <button className="button outline" onClick={() => setUpdatingOrder(null)} disabled={updateLoading}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
