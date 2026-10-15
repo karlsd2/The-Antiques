@@ -30,6 +30,36 @@ export function Sales({ products }: { products: Product[] }) {
   const activeProducts = products.filter(p => p.status === 'active').length;
   const conversionRate = activeProducts > 0 ? (totalOrders / activeProducts) * 100 : 0;
 
+  // Calculate monthly sales data
+  const monthlySales = Array(12).fill(0).map((_, monthIndex) => {
+    const currentYear = new Date().getFullYear();
+    return orders.reduce((sum, order) => {
+      const orderDate = new Date(order.created_at);
+      if (orderDate.getFullYear() === currentYear && orderDate.getMonth() === monthIndex) {
+        return sum + (order.items?.reduce((itemSum, item) => itemSum + (item.price * item.quantity), 0) || 0);
+      }
+      return sum;
+    }, 0);
+  });
+
+  // Find max value for scaling
+  const maxMonthlySales = Math.max(...monthlySales, 1);
+  const chartHeights = monthlySales.map(sales => (sales / maxMonthlySales) * 100);
+
+  // Calculate best-selling products
+  const productSales = products.map(product => {
+    const totalSold = orders.reduce((sum, order) => {
+      return sum + (order.items?.reduce((itemSum, item) => {
+        return itemSum + (item.product_id === product.id ? item.quantity : 0);
+      }, 0) || 0);
+    }, 0);
+    return {
+      ...product,
+      totalSold,
+      totalRevenue: totalSold * product.price
+    };
+  }).filter(p => p.totalSold > 0).sort((a, b) => b.totalSold - a.totalSold);
+
   return (
     <main className="inner-page">
       <div className="dashboard-title">
@@ -65,10 +95,10 @@ export function Sales({ products }: { products: Product[] }) {
       <div className="sales-chart table-card">
         <div className="panel-heading">
           <h2>Sales activity</h2>
-          <Badge>Healthy growth</Badge>
+          <Badge>{loading ? 'Loading...' : grossSales > 0 ? 'Active sales' : 'No sales yet'}</Badge>
         </div>
         <div className="chart-bars">
-          {[34, 48, 42, 65, 58, 82, 76, 92, 68, 88, 79, 100].map((height, i) => (
+          {chartHeights.map((height, i) => (
             <div key={i}>
               <i style={{ height: `${height}%` }} />
               <span>{["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"][i]}</span>
@@ -78,14 +108,18 @@ export function Sales({ products }: { products: Product[] }) {
       </div>
       <div className="table-card best-sellers">
         <div className="panel-heading"><h2>Best-selling pieces</h2></div>
-        {products.slice(0, 4).map((product, index) => (
-          <div className="recent-row" key={product.id}>
-            <span className="rank">0{index + 1}</span>
-            <img src={product.images?.[0] || ''} alt="" />
-            <div><strong>{product.name}</strong><span>{index * 4 + 7} sold</span></div>
-            <b>{money(product.price * (index * 4 + 7))}</b>
-          </div>
-        ))}
+        {productSales.length === 0 ? (
+          <p>No sales yet.</p>
+        ) : (
+          productSales.slice(0, 4).map((product, index) => (
+            <div className="recent-row" key={product.id}>
+              <span className="rank">0{index + 1}</span>
+              <img src={product.images?.[0] || ''} alt="" />
+              <div><strong>{product.name}</strong><span>{product.totalSold} sold</span></div>
+              <b>{money(product.totalRevenue)}</b>
+            </div>
+          ))
+        )}
       </div>
     </main>
   );
