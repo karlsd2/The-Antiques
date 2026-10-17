@@ -27,7 +27,8 @@ export function Auth({ mode, navigate, onLogin }: { mode: "login" | "register" |
       } else if (mode === "register") {
         await signUp(email, password, fullName || '', selectedRole);
       }
-      onLogin();
+      // Let App.tsx handle the redirect based on profile role
+      // The useEffect in App.tsx will redirect after profile loads
     } catch (err: any) {
       setError(err.message || "An error occurred. Please try again.");
     } finally {
