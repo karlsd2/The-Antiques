@@ -5,6 +5,7 @@ import { money } from '../../lib/utils';
 import type { Page, Product, Category } from '../../types';
 import { useAuth } from '../../hooks/useAuth';
 import { useProducts, useCategories, deleteProduct, createProduct, updateProduct } from '../../hooks/useProducts';
+import { supabase } from '../../lib/supabase';
 
 export function Products({ navigate, onProductCreated }: { navigate: (page: Page) => void; onProductCreated?: () => void }) {
   const { user, profile } = useAuth();
@@ -15,6 +16,9 @@ export function Products({ navigate, onProductCreated }: { navigate: (page: Page
   const [removed, setRemoved] = useState<string[]>([]);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const handleDelete = async (productId: string) => {
     try {
@@ -29,6 +33,64 @@ export function Products({ navigate, onProductCreated }: { navigate: (page: Page
 
   const handleEdit = (product: Product) => {
     setShowEdit(product);
+    setImagePreviews(product.images || []);
+    setSelectedImages([]);
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length + selectedImages.length > 8) {
+      alert('Maximum 8 images allowed');
+      return;
+    }
+
+    setSelectedImages([...selectedImages, ...files]);
+
+    // Create previews
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreviews(prev => [...prev, reader.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeImage = (index: number) => {
+    setSelectedImages(prev => prev.filter((_, i) => i !== index));
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadImages = async (): Promise<string[]> => {
+    if (selectedImages.length === 0) return imagePreviews;
+
+    const uploadedUrls: string[] = [];
+    setUploadProgress(0);
+
+    for (let i = 0; i < selectedImages.length; i++) {
+      const file = selectedImages[i];
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random()}.${fileExt}`;
+      const filePath = `products/${user?.id}/${fileName}`;
+
+      // Note: You need to create a Supabase storage bucket named 'product-images' with public access
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw new Error(`Failed to upload image: ${uploadError.message}`);
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filePath);
+
+      uploadedUrls.push(publicUrl);
+      setUploadProgress(((i + 1) / selectedImages.length) * 100);
+    }
+
+    return [...imagePreviews, ...uploadedUrls];
   };
 
   const handleUpdateProduct = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -60,6 +122,9 @@ export function Products({ navigate, onProductCreated }: { navigate: (page: Page
     }
 
     try {
+      // Upload new images if any
+      const imageUrls = selectedImages.length > 0 ? await uploadImages() : imagePreviews;
+
       await updateProduct(showEdit.id, {
         name: productName,
         price,
@@ -69,9 +134,13 @@ export function Products({ navigate, onProductCreated }: { navigate: (page: Page
         verified: verified || 'Pending',
         stock: stock || 1,
         description,
+        images: imageUrls,
         status: status || 'active',
       });
       setShowEdit(null);
+      setSelectedImages([]);
+      setImagePreviews([]);
+      setUploadProgress(0);
       refetch();
     } catch (err: any) {
       console.error('Error updating product:', err);
@@ -110,6 +179,9 @@ export function Products({ navigate, onProductCreated }: { navigate: (page: Page
     }
 
     try {
+      // Upload images
+      const imageUrls = await uploadImages();
+
       await createProduct({
         seller_id: user.id,
         name: productName,
@@ -120,10 +192,13 @@ export function Products({ navigate, onProductCreated }: { navigate: (page: Page
         verified: verified || 'Pending',
         stock: stock || 1,
         description,
-        images: [], // For now, empty array - image upload would need separate implementation
+        images: imageUrls,
         status: 'active',
       });
       setShowAdd(false);
+      setSelectedImages([]);
+      setImagePreviews([]);
+      setUploadProgress(0);
       refetch();
       if (onProductCreated) {
         onProductCreated();
@@ -193,10 +268,64 @@ export function Products({ navigate, onProductCreated }: { navigate: (page: Page
             {formError && <div style={{ color: '#dc2626', marginBottom: '1rem' }}>{formError}</div>}
             <form onSubmit={handleCreateProduct}>
               <div className="image-upload">
-                <Icon name="plus" />
-                <strong>Add product images</strong>
-                <span>Up to 8 images, JPG or PNG</span>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/jpg"
+                  multiple
+                  onChange={handleImageSelect}
+                  style={{ display: 'none' }}
+                  id="product-images"
+                />
+                <label htmlFor="product-images" style={{ cursor: 'pointer', display: 'block', textAlign: 'center' }}>
+                  <Icon name="plus" />
+                  <div>
+                    <strong>Add images</strong>
+                  </div>
+                </label>
               </div>
+              {imagePreviews.length > 0 && (
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                  {imagePreviews.map((preview, index) => (
+                    <div key={index} style={{ position: 'relative', width: '80px', height: '80px' }}>
+                      <img
+                        src={preview}
+                        alt={`Preview ${index + 1}`}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        style={{
+                          position: 'absolute',
+                          top: '-8px',
+                          right: '-8px',
+                          background: '#dc2626',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '50%',
+                          width: '20px',
+                          height: '20px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '12px'
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {uploadProgress > 0 && uploadProgress < 100 && (
+                <div style={{ marginBottom: '1rem' }}>
+                  <div style={{ background: '#e5e7eb', borderRadius: '4px', height: '8px', overflow: 'hidden' }}>
+                    <div style={{ background: '#3b82f6', height: '100%', width: `${uploadProgress}%`, transition: 'width 0.3s' }} />
+                  </div>
+                  <small style={{ color: '#6b7280' }}>Uploading images... {Math.round(uploadProgress)}%</small>
+                </div>
+              )}
               <div className="form-grid">
                 <label className="wide">Product name<input name="productName" required placeholder="e.g. 1960s ceramic table lamp" /></label>
                 <label>Category<select name="categoryId"><option value="">Select category</option>{categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></label>
@@ -224,10 +353,64 @@ export function Products({ navigate, onProductCreated }: { navigate: (page: Page
             {formError && <div style={{ color: '#dc2626', marginBottom: '1rem' }}>{formError}</div>}
             <form onSubmit={handleUpdateProduct}>
               <div className="image-upload">
-                <Icon name="plus" />
-                <strong>Edit product images</strong>
-                <span>Up to 8 images, JPG or PNG</span>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/jpg"
+                  multiple
+                  onChange={handleImageSelect}
+                  style={{ display: 'none' }}
+                  id="edit-product-images"
+                />
+                <label htmlFor="edit-product-images" style={{ cursor: 'pointer', display: 'block', textAlign: 'center' }}>
+                  <Icon name="plus" />
+                  <div>
+                    <strong>Edit images</strong>
+                  </div>
+                </label>
               </div>
+              {imagePreviews.length > 0 && (
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                  {imagePreviews.map((preview, index) => (
+                    <div key={index} style={{ position: 'relative', width: '80px', height: '80px' }}>
+                      <img
+                        src={preview}
+                        alt={`Preview ${index + 1}`}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        style={{
+                          position: 'absolute',
+                          top: '-8px',
+                          right: '-8px',
+                          background: '#dc2626',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '50%',
+                          width: '20px',
+                          height: '20px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '12px'
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {uploadProgress > 0 && uploadProgress < 100 && (
+                <div style={{ marginBottom: '1rem' }}>
+                  <div style={{ background: '#e5e7eb', borderRadius: '4px', height: '8px', overflow: 'hidden' }}>
+                    <div style={{ background: '#3b82f6', height: '100%', width: `${uploadProgress}%`, transition: 'width 0.3s' }} />
+                  </div>
+                  <small style={{ color: '#6b7280' }}>Uploading images... {Math.round(uploadProgress)}%</small>
+                </div>
+              )}
               <div className="form-grid">
                 <label className="wide">Product name<input name="productName" required defaultValue={showEdit.name} placeholder="e.g. 1960s ceramic table lamp" /></label>
                 <label>Category<select name="categoryId" defaultValue={showEdit.category_id || ''}><option value="">Select category</option>{categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}</select></label>
