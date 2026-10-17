@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Icon } from '../components/Icon';
 import { ProductCard } from '../components/ProductCard';
+import { SkeletonCard } from '../components/Skeleton';
 import type { Page, Product, Category } from '../types';
 
 export function Shop({ navigate, favorites, toggleFavorite, products, categories, loading, error }: { navigate: (page: Page, product?: Product) => void; favorites: string[]; toggleFavorite: (id: string) => void; products: Product[]; categories: Category[]; loading: boolean; error: Error | null }) {
@@ -25,7 +26,17 @@ export function Shop({ navigate, favorites, toggleFavorite, products, categories
         <div className="page-intro">
           <span className="eyebrow">The collection</span>
           <h1>Pieces with a past,<br /><em>ready for what's next.</em></h1>
-          <p>Loading...</p>
+          <p>Explore verified vintage and collectible objects from trusted sellers.</p>
+        </div>
+        <div className="shop-tools">
+          <label className="search-field"><Icon name="search" /><input placeholder="Search vintage pieces..." disabled /></label>
+          <select disabled><option>All categories</option></select>
+          <select disabled><option>All conditions</option></select>
+          <select disabled><option>Newest</option></select>
+        </div>
+        <div className="results-line"><span>Loading exceptional pieces</span><span>Every item ships insured</span></div>
+        <div className="product-grid four">
+          <SkeletonCard count={8} />
         </div>
       </main>
     );

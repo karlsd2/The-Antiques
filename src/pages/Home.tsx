@@ -1,6 +1,7 @@
 import { Icon } from '../components/Icon';
 import { SectionTitle } from '../components/SectionTitle';
 import { ProductCard } from '../components/ProductCard';
+import { SkeletonCard, SkeletonCategory } from '../components/Skeleton';
 import type { Page, Product, Category } from '../types';
 
 export function Home({ navigate, favorites, toggleFavorite, products, categories, loading, error }: { navigate: (page: Page, product?: Product) => void; favorites: string[]; toggleFavorite: (id: string) => void; products: Product[]; categories: Category[]; loading: boolean; error: Error | null }) {
@@ -24,7 +25,15 @@ export function Home({ navigate, favorites, toggleFavorite, products, categories
         </section>
         <section className="page-section">
           <SectionTitle eyebrow="Freshly found" title="New arrivals" />
-          <p>Loading products...</p>
+          <div className="product-grid four">
+            <SkeletonCard count={4} />
+          </div>
+        </section>
+        <section className="category-section">
+          <SectionTitle eyebrow="Browse the archive" title="Shop by collection" />
+          <div className="category-grid">
+            <SkeletonCategory count={8} />
+          </div>
         </section>
       </>
     );

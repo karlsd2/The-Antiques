@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Icon } from '../components/Icon';
+import { SkeletonRow } from '../components/Skeleton';
 import { money } from '../lib/utils';
 import { useAuth } from '../hooks/useAuth';
 import { useOrders } from '../hooks/useOrders';
@@ -57,7 +58,7 @@ export function Orders({ seller = false }: { seller?: boolean }) {
             <span></span>
           </div>
           {loading ? (
-            <div className="table-row"><span>Loading...</span></div>
+            <SkeletonRow count={5} />
           ) : error ? (
             <div className="table-row"><span>Error: {error.message}</span></div>
           ) : orders.length === 0 ? (

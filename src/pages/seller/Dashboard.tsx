@@ -1,4 +1,5 @@
 import { Icon } from '../../components/Icon';
+import { SkeletonStat, SkeletonRecentRow } from '../../components/Skeleton';
 import { money } from '../../lib/utils';
 import type { Page, Product } from '../../types';
 import type { Profile } from '../../hooks/useAuth';
@@ -38,6 +39,7 @@ export function Dashboard({ navigate, products, loading, profile, user, refetch 
     ["Items sold", itemsSold.toString(), "All time", "check"],
     ["Total sales", money(totalSales), "All time", "chart"]
   ];
+
   return (
     <main className="inner-page">
       <div className="dashboard-title">
@@ -49,14 +51,18 @@ export function Dashboard({ navigate, products, loading, profile, user, refetch 
         <button className="button primary" onClick={() => navigate("products")}><Icon name="plus" /> Add a product</button>
       </div>
       <div className="stats-grid">
-        {stats.map(([label, value, note, icon]) => (
-          <div className="stat-card" key={label}>
-            <span><Icon name={icon} /></span>
-            <small>{label}</small>
-            <strong>{value}</strong>
-            <p>{note}</p>
-          </div>
-        ))}
+        {loading ? (
+          <SkeletonStat count={4} />
+        ) : (
+          stats.map(([label, value, note, icon]) => (
+            <div className="stat-card" key={label}>
+              <span><Icon name={icon} /></span>
+              <small>{label}</small>
+              <strong>{value}</strong>
+              <p>{note}</p>
+            </div>
+          ))
+        )}
       </div>
       <div className="dashboard-grid">
         <div className="table-card">
@@ -65,7 +71,7 @@ export function Dashboard({ navigate, products, loading, profile, user, refetch 
             <button className="text-link" onClick={() => navigate("seller-orders")}>View all <Icon name="arrow" /></button>
           </div>
           {ordersLoading ? (
-            <p>Loading...</p>
+            <SkeletonRecentRow count={3} />
           ) : orders.length === 0 ? (
             <p>No orders yet.</p>
           ) : (
@@ -88,7 +94,7 @@ export function Dashboard({ navigate, products, loading, profile, user, refetch 
             <button className="text-link" onClick={() => navigate("products")}>Manage <Icon name="arrow" /></button>
           </div>
           {loading ? (
-            <p>Loading...</p>
+            <SkeletonRecentRow count={3} />
           ) : products.length === 0 ? (
             <p>No listings yet. Add your first product to get started.</p>
           ) : (

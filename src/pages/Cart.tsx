@@ -1,5 +1,6 @@
 import { Icon } from '../components/Icon';
 import { Badge } from '../components/Badge';
+import { SkeletonCartItem } from '../components/Skeleton';
 import { money } from '../lib/utils';
 import type { Page, Product } from '../types';
 import type { CartItem } from '../hooks/useCart';
@@ -72,6 +73,21 @@ export function Cart({ items, cartItems, remove, updateQuantity, navigate, loadi
           <span className="eyebrow">Your selection</span>
           <h1>Shopping cart</h1>
           <p>Loading your cart...</p>
+        </div>
+        <div className="cart-layout">
+          <div className="cart-list">
+            <SkeletonCartItem count={3} />
+          </div>
+          <aside className="summary-card">
+            <h2>Order summary</h2>
+            <div><span>Subtotal</span><strong className="skeleton-text" style={{ height: '12px', width: '60px', display: 'inline-block' }} /></div>
+            <div><span>Insured shipping</span><strong className="skeleton-text" style={{ height: '12px', width: '60px', display: 'inline-block' }} /></div>
+            <div><span>Estimated tax</span><span className="skeleton-text" style={{ height: '12px', width: '80px', display: 'inline-block' }} /></div>
+            <hr />
+            <div className="total"><span>Total</span><strong className="skeleton-text" style={{ height: '23px', width: '80px', display: 'inline-block' }} /></div>
+            <div className="skeleton-text" style={{ height: '49px', width: '100%', marginTop: '24px', borderRadius: '3px' }} />
+            <small><Icon name="shield" size={14} /> Protected purchase guarantee</small>
+          </aside>
         </div>
       </main>
     );

@@ -1,5 +1,6 @@
 import { Icon } from '../../components/Icon';
 import { Badge } from '../../components/Badge';
+import { SkeletonStat, SkeletonText } from '../../components/Skeleton';
 import { money } from '../../lib/utils';
 import type { Product } from '../../types';
 import { useAuth } from '../../hooks/useAuth';
@@ -71,40 +72,57 @@ export function Sales({ products }: { products: Product[] }) {
         <select><option>Last 6 months</option><option>This year</option></select>
       </div>
       <div className="stats-grid">
-        <div className="stat-card">
-          <small>Gross sales</small>
-          <strong>{loading ? '...' : money(grossSales)}</strong>
-          <p>{totalItemsSold} items sold</p>
-        </div>
-        <div className="stat-card">
-          <small>Net earnings</small>
-          <strong>{loading ? '...' : money(netEarnings)}</strong>
-          <p>After 10% marketplace fee</p>
-        </div>
-        <div className="stat-card">
-          <small>Average order</small>
-          <strong>{loading ? '...' : money(averageOrder)}</strong>
-          <p>Across {totalOrders} sales</p>
-        </div>
-        <div className="stat-card">
-          <small>Conversion</small>
-          <strong>{loading ? '...' : conversionRate.toFixed(1)}%</strong>
-          <p>Orders per active product</p>
-        </div>
+        {loading ? (
+          <SkeletonStat count={4} />
+        ) : (
+          <>
+            <div className="stat-card">
+              <small>Gross sales</small>
+              <strong>{money(grossSales)}</strong>
+              <p>{totalItemsSold} items sold</p>
+            </div>
+            <div className="stat-card">
+              <small>Net earnings</small>
+              <strong>{money(netEarnings)}</strong>
+              <p>After 10% marketplace fee</p>
+            </div>
+            <div className="stat-card">
+              <small>Average order</small>
+              <strong>{money(averageOrder)}</strong>
+              <p>Across {totalOrders} sales</p>
+            </div>
+            <div className="stat-card">
+              <small>Conversion</small>
+              <strong>{conversionRate.toFixed(1)}%</strong>
+              <p>Orders per active product</p>
+            </div>
+          </>
+        )}
       </div>
       <div className="sales-chart table-card">
         <div className="panel-heading">
           <h2>Sales activity</h2>
           <Badge>{loading ? 'Loading...' : grossSales > 0 ? 'Active sales' : 'No sales yet'}</Badge>
         </div>
-        <div className="chart-bars">
-          {chartHeights.map((height, i) => (
-            <div key={i}>
-              <i style={{ height: `${height}%` }} />
-              <span>{["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"][i]}</span>
-            </div>
-          ))}
-        </div>
+        {loading ? (
+          <div className="chart-bars">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div key={i}>
+                <div className="skeleton-text" style={{ height: '50%', width: '100%', borderRadius: '20px 20px 0 0' }} />
+                <span className="skeleton-text" style={{ height: '10px', width: '20px', marginTop: '10px' }} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="chart-bars">
+            {chartHeights.map((height, i) => (
+              <div key={i}>
+                <i style={{ height: `${height}%` }} />
+                <span>{["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"][i]}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
       <div className="table-card best-sellers">
         <div className="panel-heading"><h2>Best-selling pieces</h2></div>

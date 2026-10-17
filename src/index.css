@@ -304,6 +304,61 @@ footer input { flex: 1; border: 0; background: transparent; color: white; outlin
 footer label button { border: 0; background: none; color: white; }
 footer > small { position: absolute; left: clamp(24px, 6vw, 88px); bottom: 25px; color: #71635d; font-size: 8px; }
 
+/* Skeleton Loading Styles */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-text {
+  height: 12px;
+  background: linear-gradient(90deg, var(--line) 25%, var(--cream) 50%, var(--line) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 2px;
+}
+
+.skeleton-image {
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--line) 25%, var(--cream) 50%, var(--line) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeleton-cart-item > div:first-child {
+  background: linear-gradient(90deg, var(--line) 25%, var(--cream) 50%, var(--line) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeleton-card .skeleton-meta { height: 10px; width: 80%; margin-bottom: 8px; }
+.skeleton-card .skeleton-title { height: 20px; width: 90%; margin-bottom: 12px; }
+.skeleton-card .skeleton-price { height: 18px; width: 60%; }
+.skeleton-card .skeleton-verified { height: 12px; width: 50%; }
+
+.skeleton-row .skeleton-cell { height: 12px; width: 100%; }
+
+.skeleton-row .skeleton-avatar { width: 36px; height: 36px; border-radius: 50%; }
+.skeleton-row .skeleton-info { height: 12px; width: 120px; }
+.skeleton-row .skeleton-price { height: 12px; width: 60px; }
+.skeleton-row .skeleton-status { height: 12px; width: 50px; }
+
+.skeleton-stat .skeleton-icon { height: 24px; width: 24px; border-radius: 50%; margin-left: auto; }
+.skeleton-stat .skeleton-label { height: 10px; width: 60%; margin-top: 8px; }
+.skeleton-stat .skeleton-value { height: 32px; width: 70%; margin: 12px 0 6px; }
+.skeleton-stat .skeleton-note { height: 10px; width: 50%; }
+
+.skeleton-category .skeleton-cat-label { height: 10px; width: 40%; margin-bottom: 12px; }
+.skeleton-category .skeleton-cat-name { height: 22px; width: 60%; }
+
+.skeleton-cart-item { display: grid; grid-template-columns: 145px 1fr auto; gap: 22px; border-top: 1px solid var(--line); padding: 22px 0; }
+
 @media (max-width: 1050px) {
   header nav { gap: 16px; }
   .product-grid.four { grid-template-columns: repeat(2, 1fr); }

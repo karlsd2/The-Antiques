@@ -1,5 +1,6 @@
 import { ProductCard } from '../components/ProductCard';
 import { Icon } from '../components/Icon';
+import { SkeletonCard } from '../components/Skeleton';
 import type { Page, Product } from '../types';
 
 export function Wishlist({ navigate, favorites, toggleFavorite, products, loading, error }: { navigate: (page: Page, product?: Product) => void; favorites: string[]; toggleFavorite: (id: string) => void; products: Product[]; loading: boolean; error: Error | null }) {
@@ -12,6 +13,9 @@ export function Wishlist({ navigate, favorites, toggleFavorite, products, loadin
           <span className="eyebrow">Saved for later</span>
           <h1>Your wishlist</h1>
           <p>Loading your saved pieces...</p>
+        </div>
+        <div className="product-grid four">
+          <SkeletonCard count={4} />
         </div>
       </main>
     );
