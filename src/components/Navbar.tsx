@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Icon } from './Icon';
 import type { Role, Page } from '../types';
 
@@ -16,9 +16,42 @@ export function Navbar({
   onLogout: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [showLogoutPopup, setShowLogoutPopup] = useState(false);
+  const logoutButtonRef = useRef<HTMLDivElement>(null);
   const buyerNav: [string, Page][] = [["Home", "home"], ["Shop", "shop"], ["Categories", "shop"], ["Wishlist", "wishlist"], ["Orders", "orders"]];
   const sellerNav: [string, Page][] = [["Dashboard", "dashboard"], ["Products", "products"], ["Orders", "seller-orders"], ["Sales", "sales"]];
   const nav = role === "buyer" ? buyerNav : sellerNav;
+
+  // Close popup when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (logoutButtonRef.current && !logoutButtonRef.current.contains(event.target as Node)) {
+        setShowLogoutPopup(false);
+      }
+    };
+
+    if (showLogoutPopup) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showLogoutPopup]);
+
+  const handleLogoutClick = () => {
+    setShowLogoutPopup(true);
+  };
+
+  const handleConfirmLogout = () => {
+    setShowLogoutPopup(false);
+    onLogout();
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutPopup(false);
+  };
+
   return (
     <>
       <header>
@@ -31,7 +64,11 @@ export function Navbar({
             <button key={label} className={page === destination ? "active" : ""} onClick={() => { onNavigate(destination); setOpen(false); }}>{label}</button>
           ))}
           <div className="mobile-logout">
-            <button onClick={onLogout}>Sign out</button>
+            <button onClick={() => {
+              if (window.confirm('Are you sure you want to sign out?')) {
+                onLogout();
+              }
+            }}>Sign out</button>
           </div>
         </nav>
         <div className="header-actions">
@@ -41,7 +78,20 @@ export function Navbar({
             </button>
           )}
           <button className="icon-button" onClick={() => onNavigate(role === "buyer" ? "profile" : "seller-profile")} aria-label="Profile"><Icon name="user" size={21} /></button>
-          <button className="icon-button" onClick={onLogout} aria-label="Sign out"><Icon name="signout" size={18} /></button>
+          <div className="icon-button-wrapper" ref={logoutButtonRef}>
+            <button className="icon-button" onClick={handleLogoutClick} aria-label="Sign out">
+              <Icon name="signout" size={18} />
+            </button>
+            {showLogoutPopup && (
+              <div className="logout-popup">
+                <p>Are you sure you want to sign out?</p>
+                <div className="logout-popup-actions">
+                  <button className="button outline" onClick={handleCancelLogout}>Cancel</button>
+                  <button className="button primary" onClick={handleConfirmLogout}>Sign Out</button>
+                </div>
+              </div>
+            )}
+          </div>
           <button className="menu-button" onClick={() => setOpen(!open)} aria-label="Menu"><Icon name={open ? "close" : "menu"} size={23} /></button>
         </div>
       </header>
