@@ -37,15 +37,7 @@ export function Auth({ mode, navigate, onLogin }: { mode: "login" | "register" |
   };
 
   return (
-    <main className="auth-page">
-      <div className="auth-image">
-        <img src="https://images.unsplash.com/photo-1739134471861-d56aac3b0e87?auto=format&fit=crop&w=1200&q=85" alt="A curated room of vintage objects" />
-        <div>
-          <span className="brand-mark">A</span>
-          <blockquote>"The most meaningful rooms are built one story at a time."</blockquote>
-          <small>THE ANTIQUES</small>
-        </div>
-      </div>
+    <main className="auth-page centered">
       <div className="auth-form-wrap">
         <button className="auth-brand" onClick={() => navigate("login")}>The Antiques</button>
         <div className="auth-form">

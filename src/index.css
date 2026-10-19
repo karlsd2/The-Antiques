@@ -273,14 +273,17 @@ select, input, textarea { color: var(--ink); }
 .quick-links { display: grid; grid-template-columns: repeat(3,1fr); margin-top: 25px; }
 .quick-links button { display: flex; justify-content: space-between; padding: 25px; background: var(--ink); color: white; border: 0; border-right: 1px solid #51433e; font: 500 16px "Playfair Display", serif; }
 .auth-page { min-height: 100vh; display: grid; grid-template-columns: .9fr 1.1fr; }
+.auth-page.centered { display: flex; align-items: center; justify-content: center; }
 .auth-image { position: relative; min-height: 700px; background: var(--ink); }
 .auth-image > img { width: 100%; height: 100%; object-fit: cover; filter: brightness(.55) saturate(.65); }
 .auth-image > div { position: absolute; inset: 0; color: white; display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 50px; text-align: center; }
 .auth-image blockquote { font: 500 38px/1.25 "Playfair Display", serif; max-width: 500px; }
 .auth-image small { letter-spacing: .25em; }
 .auth-form-wrap { padding: 45px clamp(30px, 8vw, 120px); }
+.auth-page.centered .auth-form-wrap { padding: 40px; width: 100%; max-width: 500px; }
 .auth-brand { border: 0; background: none; font: 500 18px "Playfair Display", serif; }
 .auth-form { max-width: 480px; margin: 90px auto 0; }
+.auth-page.centered .auth-form { margin: 0; }
 .auth-form h1 { font-size: 52px; font-weight: 500; margin-bottom: 10px; }
 .auth-form > p { color: var(--ink-soft); margin-bottom: 35px; }
 .auth-form label { margin-top: 17px; }
@@ -373,6 +376,7 @@ footer > small { position: absolute; left: clamp(24px, 6vw, 88px); bottom: 25px;
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .inventory-row { grid-template-columns: 55px 1.5fr .7fr .7fr auto; }
   .inventory-row > span:nth-of-type(2), .inventory-row > span:nth-of-type(3) { display: none; }
+  .auth-page.centered .auth-form-wrap { padding: 30px 40px; }
 }
 
 @media (max-width: 760px) {
@@ -434,10 +438,12 @@ footer > small { position: absolute; left: clamp(24px, 6vw, 88px); bottom: 25px;
   .profile-hero { grid-template-columns: 1fr; padding: 28px; }
   .profile-actions { flex-direction: column; }
   .profile-grid, .quick-links { grid-template-columns: 1fr; }
-  .auth-image { min-height: 360px; }
-  .auth-image blockquote { font-size: 28px; }
+  .auth-page { grid-template-columns: 1fr; }
+  .auth-image { display: none; }
   .auth-form-wrap { padding: 30px 20px 70px; }
   .auth-form { margin-top: 55px; }
+  .auth-page.centered { padding: 20px; }
+  .auth-page.centered .auth-form-wrap { padding: 0; max-width: 100%; }
   footer { grid-template-columns: 1fr 1fr; }
 }
 
