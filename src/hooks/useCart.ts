@@ -42,20 +42,6 @@ export function useCart(userId: string | null) {
         .eq('user_id', userId)
 
       if (error) throw error
-
-      // Diagnostic logging for cart data
-      console.log(`[Cart Fetch] Retrieved ${data?.length || 0} cart items for user`);
-      console.log(`[Cart Fetch] Raw data structure:`, data);
-      data?.forEach((cartItem, index) => {
-        console.log(`[Cart Fetch] Item ${index + 1}: cart_id=${cartItem.id}, product_id=${cartItem.product_id}, quantity=${cartItem.quantity}`);
-        console.log(`[Cart Fetch] Full cart item object:`, cartItem);
-        if (!cartItem.products) {
-          console.warn(`[Cart Fetch] Product data missing for cart item ${cartItem.id}, product_id=${cartItem.product_id}`);
-        } else {
-          console.log(`[Cart Fetch] Product data: name="${cartItem.products.name}", price=${cartItem.products.price}, stock=${cartItem.products.stock}, status=${cartItem.products.status}`);
-        }
-      });
-
       setCart(data || [])
     } catch (err) {
       setError(err as Error)
@@ -170,16 +156,6 @@ export function useCart(userId: string | null) {
   // Valid count (only items with valid product data)
   const validCount = cart.reduce((sum, item) => {
     const hasValidProduct = item.products?.name && item.products?.price > 0 && item.products?.stock > 0;
-
-    // Diagnostic logging for invalid items (without sensitive user data)
-    if (!hasValidProduct) {
-      const reasons = [];
-      if (!item.products?.name) reasons.push('missing name');
-      if (!item.products?.price || item.products.price <= 0) reasons.push(`invalid price: ${item.products?.price}`);
-      if (!item.products?.stock || item.products.stock <= 0) reasons.push(`invalid stock: ${item.products?.stock}`);
-      console.warn(`[Cart Validation] Cart item ${item.id} (product: ${item.product_id}) is invalid: ${reasons.join(', ')}`);
-    }
-
     return hasValidProduct ? sum + item.quantity : sum;
   }, 0)
 

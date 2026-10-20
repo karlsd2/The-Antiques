@@ -6,38 +6,13 @@ import type { Page, Product } from '../types';
 import type { CartItem } from '../hooks/useCart';
 
 export function Cart({ items, cartItems, remove, updateQuantity, navigate, loading, error, totalCount }: { items: Product[]; cartItems: CartItem[]; remove: (id: string) => void; updateQuantity: (id: string, quantity: number) => void; navigate: (page: Page) => void; loading: boolean; error: Error | null; totalCount?: number }) {
-  // Diagnostic logging for received items
-  console.log(`[Cart Page] Received ${items.length} items`);
-  console.log(`[Cart Page] Items data:`, items);
-  console.log(`[Cart Page] CartItems data:`, cartItems);
-
-  // Filter out items with missing or invalid product data with diagnostic logging
+  // Filter out items with missing or invalid product data
   const validItems = items.filter(item => {
     const isValid = item.name && item.price > 0 && item.stock > 0;
-    if (!isValid) {
-      const reasons = [];
-      if (!item.name) reasons.push('missing name');
-      if (!item.price || item.price <= 0) reasons.push(`invalid price: ${item.price}`);
-      if (!item.stock || item.stock <= 0) reasons.push(`invalid stock: ${item.stock}`);
-      console.warn(`[Cart Page] Product ${item.id} is invalid: ${reasons.join(', ')}`);
-    }
     return isValid;
   });
 
   const invalidItems = items.filter(item => !item.name || item.price <= 0 || item.stock <= 0);
-
-  // Generate diagnostic details for invalid items
-  const invalidItemDetails = invalidItems.map(item => {
-    const reasons = [];
-    if (!item.name) reasons.push('missing name');
-    if (!item.price || item.price <= 0) reasons.push(`price: ${item.price}`);
-    if (!item.stock || item.stock <= 0) reasons.push(`stock: ${item.stock}`);
-    return {
-      id: item.id,
-      name: item.name || '(no name)',
-      reasons: reasons.join(', ')
-    };
-  });
 
   const subtotal = validItems.reduce((sum, item) => {
     const cartItem = cartItems.find(ci => ci.product_id === item.id);
@@ -59,7 +34,6 @@ export function Cart({ items, cartItems, remove, updateQuantity, navigate, loadi
     for (const item of invalidItems) {
       try {
         await remove(item.id);
-        console.log(`[Cart] Removed invalid item: ${item.id}`);
       } catch (err) {
         console.error('Error removing invalid item:', err);
       }
@@ -117,13 +91,8 @@ export function Cart({ items, cartItems, remove, updateQuantity, navigate, loadi
           <p style={{ margin: '0 0 0.5rem 0', color: '#92400e', fontSize: '0.9rem' }}>
             <Icon name="info" size={16} /> <strong>{invalidItems.length} item(s) in your cart have missing or invalid data and cannot be purchased.</strong> These items have been removed from your display.
           </p>
-          <ul style={{ margin: '0', paddingLeft: '1.5rem', color: '#92400e', fontSize: '0.85rem' }}>
-            {invalidItemDetails.map((detail, index) => (
-              <li key={index}><strong>{detail.name}</strong> – {detail.reasons}</li>
-            ))}
-          </ul>
           <p style={{ margin: '0.5rem 0 0 0', color: '#92400e', fontSize: '0.85rem' }}>
-            Please check your browser console for detailed diagnostic information. Contact support if you believe this is an error.
+            Please remove these items to proceed with checkout.
           </p>
         </div>
       )}
