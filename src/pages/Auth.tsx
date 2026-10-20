@@ -39,32 +39,34 @@ export function Auth({ mode, navigate, onLogin }: { mode: "login" | "register" |
   return (
     <main className="auth-page centered">
       <div className="auth-form-wrap">
-        <button className="auth-brand" onClick={() => navigate("login")}>The Antiques</button>
-        <div className="auth-form">
-          <span className="eyebrow">{mode === "login" ? "Member access" : mode === "register" ? "Create an account" : "Password recovery"}</span>
-          <h1>{copy[0]}</h1>
-          <p>{copy[1]}</p>
-          {(mode === "login" || mode === "register") && (
-            <div className="role-cards">
-              <button className={selectedRole === "buyer" ? "active" : ""} onClick={() => setSelectedRole("buyer")}>
-                <Icon name="bag" />
-                <span><strong>Buyer</strong><small>Discover and collect</small></span>
-              </button>
-              <button className={selectedRole === "seller" ? "active" : ""} onClick={() => setSelectedRole("seller")}>
-                <Icon name="box" />
-                <span><strong>Seller</strong><small>List and manage pieces</small></span>
-              </button>
-            </div>
-          )}
-          <form onSubmit={handleSubmit}>
-            {mode === "register" && <label>Full name<input name="fullName" required placeholder="Your name" /></label>}
-            <label>Email address<input name="email" required type="email" placeholder="you@example.com" /></label>
-            {mode !== "forgot" && <label>Password<input name="password" required type="password" placeholder="At least 8 characters" /></label>}
-            {mode === "login" && <button type="button" className="forgot-link" onClick={() => navigate("forgot")}>Forgot password?</button>}
-            {error && <div className="error-message" style={{ color: '#dc2626', marginTop: '1rem', fontSize: '0.875rem' }}>{error}</div>}
-            <button type="submit" className="button primary wide-button" disabled={loading}>{loading ? 'Processing...' : (mode === "login" ? "Sign in" : mode === "register" ? "Create account" : "Send reset link")} <Icon name="arrow" /></button>
-          </form>
-          <p className="auth-switch">{mode === "login" ? "New to The Antiques?" : "Already have an account?"} <button onClick={() => navigate(mode === "login" ? "register" : "login")}>{mode === "login" ? "Create account" : "Sign in"}</button></p>
+        <div className="auth-form-container">
+          <button className="auth-brand" onClick={() => navigate("login")}>The Antiques</button>
+          <div className="auth-form">
+            <span className="eyebrow">{mode === "login" ? "Member access" : mode === "register" ? "Create an account" : "Password recovery"}</span>
+            <h1>{copy[0]}</h1>
+            <p>{copy[1]}</p>
+            {(mode === "login" || mode === "register") && (
+              <div className="role-cards">
+                <button className={selectedRole === "buyer" ? "active" : ""} onClick={() => setSelectedRole("buyer")}>
+                  <Icon name="bag" />
+                  <span><strong>Buyer</strong><small>Discover and collect</small></span>
+                </button>
+                <button className={selectedRole === "seller" ? "active" : ""} onClick={() => setSelectedRole("seller")}>
+                  <Icon name="box" />
+                  <span><strong>Seller</strong><small>List and manage pieces</small></span>
+                </button>
+              </div>
+            )}
+            <form onSubmit={handleSubmit}>
+              {mode === "register" && <label>Full name<input name="fullName" required placeholder="Your name" /></label>}
+              <label>Email address<input name="email" required type="email" placeholder="you@example.com" /></label>
+              {mode !== "forgot" && <label>Password<input name="password" required type="password" placeholder="At least 8 characters" /></label>}
+              {mode === "login" && <button type="button" className="forgot-link" onClick={() => navigate("forgot")}>Forgot password?</button>}
+              {error && <div className="error-message" style={{ color: '#dc2626', marginTop: '1rem', fontSize: '0.875rem' }}>{error}</div>}
+              <button type="submit" className="button primary wide-button" disabled={loading}>{loading ? 'Processing...' : (mode === "login" ? "Sign in" : mode === "register" ? "Create account" : "Send reset link")} <Icon name="arrow" /></button>
+            </form>
+            <p className="auth-switch">{mode === "login" ? "New to The Antiques?" : "Already have an account?"} <button onClick={() => navigate(mode === "login" ? "register" : "login")}>{mode === "login" ? "Create account" : "Sign in"}</button></p>
+          </div>
         </div>
       </div>
     </main>
