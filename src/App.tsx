@@ -25,6 +25,11 @@ import { SellerOrders } from "./pages/seller/SellerOrders";
 import { Sales } from "./pages/seller/Sales";
 import { SellerProfile } from "./pages/seller/SellerProfile";
 
+// Page sets for role-based access control (defined outside component to avoid recreation)
+const buyerPages: Set<Page> = new Set(["home", "shop", "product", "wishlist", "cart", "checkout", "confirmation", "orders", "profile"]);
+const sellerPages: Set<Page> = new Set(["dashboard", "products", "seller-orders", "sales", "seller-profile"]);
+const authPages: Set<Page> = new Set(["login", "register", "forgot"]);
+
 export default function App() {
   const { user, profile, loading: authLoading, signOut, updateProfile } = useAuth();
   const [page, setPage] = useState<Page>("login");
@@ -59,10 +64,6 @@ export default function App() {
   const { createOrder } = useOrders(user?.id || null, false);
 
   const role = profile?.role || "buyer";
-
-  const buyerPages: Set<Page> = new Set(["home", "shop", "product", "wishlist", "cart", "checkout", "confirmation", "orders", "profile"]);
-  const sellerPages: Set<Page> = new Set(["dashboard", "products", "seller-orders", "sales", "seller-profile"]);
-  const authPages: Set<Page> = new Set(["login", "register", "forgot"]);
 
   const navigate = (destination: Page, product?: Product) => {
     // Role protection: check if the destination is accessible to the current role
@@ -223,35 +224,24 @@ export default function App() {
   }
 
   // Convert cart items to Product format for components
-  const cartProducts: Product[] = cart.map(item => {
-    // Diagnostic logging for missing product data
-    if (!item.products) {
-      console.warn(`[App.tsx] Cart item ${item.id} has no product data. Product ID: ${item.product_id}`);
-    } else {
-      if (!item.products.name) console.warn(`[App.tsx] Product ${item.product_id} has missing name`);
-      if (!item.products.price || item.products.price <= 0) console.warn(`[App.tsx] Product ${item.product_id} has invalid price: ${item.products.price}`);
-      if (!item.products.stock || item.products.stock <= 0) console.warn(`[App.tsx] Product ${item.product_id} has invalid stock: ${item.products.stock}`);
-    }
-
-    return {
-      id: item.product_id,
-      seller_id: item.products?.seller_id || '',
-      name: item.products?.name || '',
-      price: item.products?.price || 0,
-      category_id: item.products?.category_id || null,
-      category_name: item.products?.categories?.name || item.products?.category_name,
-      condition: item.products?.condition || 'Good',
-      year: item.products?.year || null,
-      verified: item.products?.verified || 'Pending',
-      stock: item.products?.stock || 0,
-      description: item.products?.description || null,
-      images: item.products?.images || [],
-      status: item.products?.status || 'active',
-      seller_name: item.products?.seller_name,
-      created_at: item.products?.created_at || '',
-      updated_at: item.products?.updated_at || '',
-    };
-  });
+  const cartProducts: Product[] = cart.map(item => ({
+    id: item.product_id,
+    seller_id: item.products?.seller_id || '',
+    name: item.products?.name || '',
+    price: item.products?.price || 0,
+    category_id: item.products?.category_id || null,
+    category_name: item.products?.categories?.name || item.products?.category_name,
+    condition: item.products?.condition || 'Good',
+    year: item.products?.year || null,
+    verified: item.products?.verified || 'Pending',
+    stock: item.products?.stock || 0,
+    description: item.products?.description || null,
+    images: item.products?.images || [],
+    status: item.products?.status || 'active',
+    seller_name: item.products?.seller_name,
+    created_at: item.products?.created_at || '',
+    updated_at: item.products?.updated_at || '',
+  }));
 
   let content: React.ReactNode;
   if (page === "home") {
@@ -285,7 +275,7 @@ export default function App() {
   } else if (page === "seller-orders") {
     content = <SellerOrders />;
   } else if (page === "sales") {
-    content = <Sales products={products} />;
+    content = <Sales products={sellerProducts} />;
   } else if (page === "seller-profile") {
     content = <SellerProfile navigate={navigate} onLogout={handleLogout} profile={profile} updateProfile={updateProfile} user={user} />;
   } else {
