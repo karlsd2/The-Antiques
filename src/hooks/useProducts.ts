@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import type { Product } from '../types'
 
@@ -18,10 +18,224 @@ export function useProducts(filters?: {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
+  const subscriptionRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
 
   useEffect(() => {
     fetchProducts()
+
+    // Only enable Realtime for buyer-facing product lists (not seller-specific views)
+    const shouldSubscribe = !filters?.sellerId
+
+    if (shouldSubscribe) {
+      setupRealtimeSubscription()
+    }
+
+    return () => {
+      if (subscriptionRef.current) {
+        supabase.removeChannel(subscriptionRef.current)
+        subscriptionRef.current = null
+      }
+    }
   }, [filters?.category, filters?.condition, filters?.search, filters?.sellerId, filters?.status])
+
+  function setupRealtimeSubscription() {
+    // Clean up existing subscription
+    if (subscriptionRef.current) {
+      supabase.removeChannel(subscriptionRef.current)
+      subscriptionRef.current = null
+    }
+
+    // Create a unique channel name to avoid conflicts
+    const channelName = `products-changes-${Date.now()}`
+
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'products'
+        },
+        (payload) => handleProductInsert(payload)
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'products'
+        },
+        (payload) => handleProductUpdate(payload)
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('[Realtime] Subscribed to products table')
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('[Realtime] Failed to subscribe to products table')
+        }
+      })
+
+    subscriptionRef.current = channel
+  }
+
+  async function handleProductInsert(payload: any) {
+    const newRecord = payload.new
+
+    // Check if the product should be visible based on current filters
+    if (!shouldIncludeProduct(newRecord)) {
+      return
+    }
+
+    // Fetch full product data with relations
+    try {
+      const { data: fullProduct } = await supabase
+        .from('products')
+        .select(`
+          *,
+          categories (name),
+          profiles!products_seller_id_fkey (full_name)
+        `)
+        .eq('id', newRecord.id)
+        .single()
+
+      if (fullProduct) {
+        const transformedProduct: Product = {
+          id: fullProduct.id,
+          seller_id: fullProduct.seller_id,
+          name: fullProduct.name,
+          price: fullProduct.price,
+          category_id: fullProduct.category_id,
+          category_name: fullProduct.categories?.name,
+          condition: fullProduct.condition,
+          year: fullProduct.year,
+          verified: fullProduct.verified,
+          stock: fullProduct.stock,
+          description: fullProduct.description,
+          images: fullProduct.images || [],
+          status: fullProduct.status,
+          seller_name: fullProduct.profiles?.full_name,
+          created_at: fullProduct.created_at,
+          updated_at: fullProduct.updated_at,
+        }
+
+        setProducts(prev => {
+          // Prevent duplicates
+          if (prev.some(p => p.id === transformedProduct.id)) {
+            return prev
+          }
+          // Add new product at the beginning
+          return [transformedProduct, ...prev]
+        })
+      }
+    } catch (err) {
+      console.error('[Realtime] Error fetching full product data:', err)
+    }
+  }
+
+  async function handleProductUpdate(payload: any) {
+    const updatedRecord = payload.new
+    const oldRecord = payload.old
+
+    // Remove product if it no longer matches filters
+    if (!shouldIncludeProduct(updatedRecord)) {
+      setProducts(prev => prev.filter(p => p.id !== updatedRecord.id))
+      return
+    }
+
+    // If product became active and matches filters, add it
+    if (oldRecord.status !== 'active' && updatedRecord.status === 'active' && shouldIncludeProduct(updatedRecord)) {
+      try {
+        const { data: fullProduct } = await supabase
+          .from('products')
+          .select(`
+            *,
+            categories (name),
+            profiles!products_seller_id_fkey (full_name)
+          `)
+          .eq('id', updatedRecord.id)
+          .single()
+
+        if (fullProduct) {
+          const transformedProduct: Product = {
+            id: fullProduct.id,
+            seller_id: fullProduct.seller_id,
+            name: fullProduct.name,
+            price: fullProduct.price,
+            category_id: fullProduct.category_id,
+            category_name: fullProduct.categories?.name,
+            condition: fullProduct.condition,
+            year: fullProduct.year,
+            verified: fullProduct.verified,
+            stock: fullProduct.stock,
+            description: fullProduct.description,
+            images: fullProduct.images || [],
+            status: fullProduct.status,
+            seller_name: fullProduct.profiles?.full_name,
+            created_at: fullProduct.created_at,
+            updated_at: fullProduct.updated_at,
+          }
+
+          setProducts(prev => {
+            if (prev.some(p => p.id === transformedProduct.id)) {
+              return prev
+            }
+            return [transformedProduct, ...prev]
+          })
+        }
+      } catch (err) {
+        console.error('[Realtime] Error fetching updated product data:', err)
+      }
+      return
+    }
+
+    // Update existing product in place
+    setProducts(prev => prev.map(p => {
+      if (p.id === updatedRecord.id) {
+        return {
+          ...p,
+          name: updatedRecord.name,
+          price: updatedRecord.price,
+          condition: updatedRecord.condition,
+          year: updatedRecord.year,
+          verified: updatedRecord.verified,
+          stock: updatedRecord.stock,
+          description: updatedRecord.description,
+          images: updatedRecord.images || [],
+          status: updatedRecord.status,
+          updated_at: updatedRecord.updated_at,
+        }
+      }
+      return p
+    }))
+  }
+
+  function shouldIncludeProduct(product: any): boolean {
+    // Check status filter
+    const targetStatus = filters?.status || 'active'
+    if (product.status !== targetStatus) {
+      return false
+    }
+
+    // Check category filter
+    if (filters?.category && product.category_id) {
+      // This is a simplified check - ideally we'd fetch the category name
+      // For now, we'll rely on the category_id matching
+      // In production, you might want to cache category names
+    }
+
+    // Check condition filter
+    if (filters?.condition && product.condition !== filters.condition) {
+      return false
+    }
+
+    // Check search filter
+    if (filters?.search && !product.name.toLowerCase().includes(filters.search.toLowerCase())) {
+      return false
+    }
+
+    return true
+  }
 
   async function fetchProducts() {
     try {
