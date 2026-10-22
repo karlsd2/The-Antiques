@@ -4,7 +4,7 @@ import { ProductCard } from '../components/ProductCard';
 import { SkeletonCard } from '../components/Skeleton';
 import type { Page, Product, Category } from '../types';
 
-export function Shop({ navigate, favorites, toggleFavorite, products, categories, loading, error }: { navigate: (page: Page, product?: Product) => void; favorites: string[]; toggleFavorite: (id: string) => void; products: Product[]; categories: Category[]; loading: boolean; error: Error | null }) {
+export function Shop({ navigate, favorites, toggleFavorite, products, categories, loading, error }: { navigate: (page: Page, product?: Product, sellerId?: string) => void; favorites: string[]; toggleFavorite: (id: string) => void; products: Product[]; categories: Category[]; loading: boolean; error: Error | null }) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All categories");
   const [condition, setCondition] = useState("All conditions");

@@ -24,9 +24,10 @@ import { Products } from "./pages/seller/Products";
 import { SellerOrders } from "./pages/seller/SellerOrders";
 import { Sales } from "./pages/seller/Sales";
 import { SellerProfile } from "./pages/seller/SellerProfile";
+import { SellerShop } from "./pages/SellerShop";
 
 // Page sets for role-based access control (defined outside component to avoid recreation)
-const buyerPages: Set<Page> = new Set(["home", "shop", "product", "wishlist", "cart", "checkout", "confirmation", "orders", "profile"]);
+const buyerPages: Set<Page> = new Set(["home", "shop", "product", "wishlist", "cart", "checkout", "confirmation", "orders", "profile", "seller-shop"]);
 const sellerPages: Set<Page> = new Set(["dashboard", "products", "seller-orders", "sales", "seller-profile"]);
 const authPages: Set<Page> = new Set(["login", "register", "forgot"]);
 
@@ -34,6 +35,7 @@ export default function App() {
   const { user, profile, loading: authLoading, signOut, updateProfile } = useAuth();
   const [page, setPage] = useState<Page>("login");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedSellerId, setSelectedSellerId] = useState<string | null>(null);
   const [lastOrder, setLastOrder] = useState<{ id: string; order_number: string } | null>(null);
   const [orderProcessing, setOrderProcessing] = useState(false);
 
@@ -65,7 +67,7 @@ export default function App() {
 
   const role = profile?.role || "buyer";
 
-  const navigate = (destination: Page, product?: Product) => {
+  const navigate = (destination: Page, product?: Product, sellerId?: string) => {
     // Role protection: check if the destination is accessible to the current role
     if (!authPages.has(destination)) {
       if (role === "buyer" && !buyerPages.has(destination)) {
@@ -83,6 +85,7 @@ export default function App() {
     }
 
     if (product) setSelectedProduct(product);
+    if (sellerId) setSelectedSellerId(sellerId);
     setPage(destination);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -278,6 +281,8 @@ export default function App() {
     content = <Sales products={sellerProducts} />;
   } else if (page === "seller-profile") {
     content = <SellerProfile navigate={navigate} onLogout={handleLogout} profile={profile} updateProfile={updateProfile} user={user} />;
+  } else if (page === "seller-shop") {
+    content = selectedSellerId ? <SellerShop navigate={navigate} sellerId={selectedSellerId} favorites={wishlist} toggleFavorite={toggleFavorite} /> : null;
   } else {
     content = <Auth mode={page as "login" | "register" | "forgot"} navigate={navigate} onLogin={handleLogin} />;
   }

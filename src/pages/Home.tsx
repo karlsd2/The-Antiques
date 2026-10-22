@@ -4,7 +4,7 @@ import { ProductCard } from '../components/ProductCard';
 import { SkeletonCard, SkeletonCategory } from '../components/Skeleton';
 import type { Page, Product, Category } from '../types';
 
-export function Home({ navigate, favorites, toggleFavorite, products, categories, loading, error }: { navigate: (page: Page, product?: Product) => void; favorites: string[]; toggleFavorite: (id: string) => void; products: Product[]; categories: Category[]; loading: boolean; error: Error | null }) {
+export function Home({ navigate, favorites, toggleFavorite, products, categories, loading, error }: { navigate: (page: Page, product?: Product, sellerId?: string) => void; favorites: string[]; toggleFavorite: (id: string) => void; products: Product[]; categories: Category[]; loading: boolean; error: Error | null }) {
   if (loading) {
     return (
       <>

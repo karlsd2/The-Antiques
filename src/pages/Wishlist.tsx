@@ -3,7 +3,7 @@ import { Icon } from '../components/Icon';
 import { SkeletonCard } from '../components/Skeleton';
 import type { Page, Product } from '../types';
 
-export function Wishlist({ navigate, favorites, toggleFavorite, products, loading, error }: { navigate: (page: Page, product?: Product) => void; favorites: string[]; toggleFavorite: (id: string) => void; products: Product[]; loading: boolean; error: Error | null }) {
+export function Wishlist({ navigate, favorites, toggleFavorite, products, loading, error }: { navigate: (page: Page, product?: Product, sellerId?: string) => void; favorites: string[]; toggleFavorite: (id: string) => void; products: Product[]; loading: boolean; error: Error | null }) {
   const wishlistProducts = products.filter((p) => favorites.includes(p.id));
 
   if (loading) {

@@ -45,8 +45,9 @@ export function useProducts(filters?: {
       subscriptionRef.current = null
     }
 
-    // Create a unique channel name to avoid conflicts
-    const channelName = `products-changes-${Date.now()}`
+    // Generate a unique channel name for each subscription attempt
+    // This prevents conflicts with React Strict Mode remounts
+    const channelName = `products-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
     const channel = supabase
       .channel(channelName)
@@ -70,13 +71,11 @@ export function useProducts(filters?: {
       )
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          console.log('[Realtime] Subscribed to products table')
+          subscriptionRef.current = channel
         } else if (status === 'CHANNEL_ERROR') {
           console.error('[Realtime] Failed to subscribe to products table')
         }
       })
-
-    subscriptionRef.current = channel
   }
 
   async function handleProductInsert(payload: any) {

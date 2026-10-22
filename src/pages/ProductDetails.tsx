@@ -1,9 +1,37 @@
+import { useEffect, useState } from 'react';
 import { Icon } from '../components/Icon';
 import { Badge } from '../components/Badge';
 import { money } from '../lib/utils';
-import type { Page, Product } from '../types';
+import { supabase } from '../lib/supabase';
+import type { Page, Product, Profile } from '../types';
 
-export function ProductDetails({ product, favorite, toggleFavorite, addToCart, navigate }: { product: Product; favorite: boolean; toggleFavorite: () => void; addToCart: () => void; navigate: (page: Page) => void }) {
+export function ProductDetails({ product, favorite, toggleFavorite, addToCart, navigate }: { product: Product; favorite: boolean; toggleFavorite: () => void; addToCart: () => void; navigate: (page: Page, product?: Product, sellerId?: string) => void }) {
+  const [sellerProfile, setSellerProfile] = useState<Profile | null>(null);
+
+  useEffect(() => {
+    if (product.seller_id) {
+      fetchSellerProfile(product.seller_id);
+    }
+  }, [product.seller_id]);
+
+  async function fetchSellerProfile(sellerId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', sellerId)
+        .single();
+
+      if (error) throw error;
+      setSellerProfile(data);
+    } catch (err) {
+      console.error('Error fetching seller profile:', err);
+    }
+  }
+
+  const displayName = sellerProfile?.store_name || sellerProfile?.full_name || product.seller_name || 'Seller';
+  const location = sellerProfile?.location || null;
+
   return (
     <main className="inner-page product-detail">
       <button className="back-link" onClick={() => navigate("shop")}>← Back to collection</button>
@@ -41,7 +69,7 @@ export function ProductDetails({ product, favorite, toggleFavorite, addToCart, n
           <dl className="product-specs">
             <div><dt>Era / year</dt><dd>{product.year || 'Unknown'}</dd></div>
             <div><dt>Category</dt><dd>{product.category_name || 'Uncategorized'}</dd></div>
-            <div><dt>Ships from</dt><dd>Brooklyn, New York</dd></div>
+            <div><dt>Ships from</dt><dd>{location || 'Philippines'}</dd></div>
             <div><dt>Availability</dt><dd>Only {product.stock} available</dd></div>
           </dl>
           <div className="purchase-actions">
@@ -49,13 +77,13 @@ export function ProductDetails({ product, favorite, toggleFavorite, addToCart, n
             <button className="button outline" onClick={() => { addToCart(); navigate("checkout"); }}>Buy it now</button>
           </div>
           <div className="seller-card">
-            <div className="avatar">{product.seller_name?.[0] || 'S'}</div>
+            <div className="avatar">{displayName[0].toUpperCase()}</div>
             <div>
               <small>Sold by</small>
-              <strong>{product.seller_name || 'Seller'} <Icon name="check" size={14} /></strong>
-              <span>Trusted seller · 98% positive</span>
+              <strong>{displayName}</strong>
+              {location && <span><Icon name="location" size={14} /> {location}</span>}
             </div>
-            <button>View shop</button>
+            <button onClick={() => navigate("seller-shop", undefined, product.seller_id)}>View shop</button>
           </div>
         </div>
       </div>
