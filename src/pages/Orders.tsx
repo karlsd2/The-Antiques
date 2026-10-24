@@ -10,12 +10,17 @@ export function Orders({ seller = false }: { seller?: boolean }) {
   const { user } = useAuth();
   const { orders, loading, error, updateOrderStatus } = useOrders(user?.id || null, seller);
   const [updatingOrder, setUpdatingOrder] = useState<Order | null>(null);
+  const [viewingOrder, setViewingOrder] = useState<Order | null>(null);
   const [updateLoading, setUpdateLoading] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
 
   const handleUpdateClick = (order: Order) => {
     setUpdatingOrder(order);
     setUpdateError(null);
+  };
+
+  const handleViewClick = (order: Order) => {
+    setViewingOrder(order);
   };
 
   const handleStatusChange = async (newStatus: Order['status']) => {
@@ -71,7 +76,7 @@ export function Orders({ seller = false }: { seller?: boolean }) {
                 <span>{new Date(order.created_at).toLocaleDateString()}</span>
                 <span>{money(order.total)}</span>
                 <span><i className={`status ${order.status.toLowerCase()}`}>{order.status}</i></span>
-                <button onClick={() => seller && handleUpdateClick(order)}>{seller ? "Update" : "View"} <Icon name="chevron" size={14} /></button>
+                <button onClick={() => seller ? handleUpdateClick(order) : handleViewClick(order)}>{seller ? "Update" : "View"} <Icon name="chevron" size={14} /></button>
               </div>
             ))
           )}
@@ -107,6 +112,80 @@ export function Orders({ seller = false }: { seller?: boolean }) {
             </div>
             <div className="modal-actions">
               <button className="button outline" onClick={() => setUpdatingOrder(null)} disabled={updateLoading}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {viewingOrder && (
+        <div className="modal-backdrop" onClick={() => setViewingOrder(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setViewingOrder(null)}><Icon name="close" /></button>
+            <span className="eyebrow">Order details</span>
+            <h2>{viewingOrder.order_number}</h2>
+            <div style={{ marginBottom: '25px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', paddingBottom: '15px', borderBottom: '1px solid var(--line)' }}>
+                <span style={{ color: 'var(--ink-soft)', textTransform: 'uppercase', fontSize: '9px', letterSpacing: '.1em' }}>Status</span>
+                <i className={`status ${viewingOrder.status.toLowerCase()}`}>{viewingOrder.status}</i>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', paddingBottom: '15px', borderBottom: '1px solid var(--line)' }}>
+                <span style={{ color: 'var(--ink-soft)', textTransform: 'uppercase', fontSize: '9px', letterSpacing: '.1em' }}>Date</span>
+                <span>{new Date(viewingOrder.created_at).toLocaleDateString()}</span>
+              </div>
+              <div style={{ marginBottom: '25px' }}>
+                <span style={{ color: 'var(--ink-soft)', textTransform: 'uppercase', fontSize: '9px', letterSpacing: '.1em', display: 'block', marginBottom: '15px' }}>Items</span>
+                {viewingOrder.items?.map((item) => (
+                  <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--line)' }}>
+                    <div>
+                      <strong style={{ display: 'block', fontSize: '12px' }}>{item.product_name}</strong>
+                      <span style={{ color: 'var(--ink-soft)', fontSize: '9px' }}>{item.product_condition || 'N/A'} · Qty {item.quantity}</span>
+                    </div>
+                    <b style={{ fontFamily: '"Playfair Display", serif', fontSize: '13px' }}>{money(item.price * item.quantity)}</b>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginBottom: '15px' }}>
+                <span style={{ color: 'var(--ink-soft)', textTransform: 'uppercase', fontSize: '9px', letterSpacing: '.1em', display: 'block', marginBottom: '15px' }}>Shipping address</span>
+                <div style={{ fontSize: '11px', lineHeight: '1.6' }}>
+                  {viewingOrder.shipping_address && (
+                    <>
+                      <div style={{ marginBottom: '8px' }}>
+                        <strong>{viewingOrder.shipping_address.first_name} {viewingOrder.shipping_address.last_name}</strong>
+                      </div>
+                      <div style={{ marginBottom: '8px' }}>
+                        {viewingOrder.shipping_address.house_number} {viewingOrder.shipping_address.street}
+                        {viewingOrder.shipping_address.additional_details && <>, {viewingOrder.shipping_address.additional_details}</>}
+                      </div>
+                      <div style={{ marginBottom: '8px' }}>
+                        {viewingOrder.shipping_address.barangay}
+                      </div>
+                      <div style={{ marginBottom: '8px' }}>
+                        {viewingOrder.shipping_address.city_municipality}, {viewingOrder.shipping_address.province}
+                      </div>
+                      <div style={{ marginBottom: '8px' }}>
+                        {viewingOrder.shipping_address.region}
+                      </div>
+                      <div>
+                        {viewingOrder.shipping_address.postal_code}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '15px', borderTop: '1px solid var(--line)' }}>
+                <span style={{ textTransform: 'uppercase', fontSize: '9px', letterSpacing: '.1em' }}>Subtotal</span>
+                <span>{money(viewingOrder.total - viewingOrder.shipping_cost)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
+                <span style={{ textTransform: 'uppercase', fontSize: '9px', letterSpacing: '.1em' }}>Shipping</span>
+                <span>{viewingOrder.shipping_cost === 0 ? "Complimentary" : money(viewingOrder.shipping_cost)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '15px', borderTop: '1px solid var(--line)' }}>
+                <span style={{ textTransform: 'uppercase', fontSize: '9px', letterSpacing: '.1em', fontWeight: '600' }}>Total</span>
+                <strong style={{ fontFamily: '"Playfair Display", serif', fontSize: '23px' }}>{money(viewingOrder.total)}</strong>
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button className="button outline" onClick={() => setViewingOrder(null)}>Close</button>
             </div>
           </div>
         </div>
