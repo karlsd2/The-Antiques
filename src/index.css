@@ -185,6 +185,7 @@ select, input, textarea { color: var(--ink); }
 .form-grid label, .auth-form label, .payment-box label { display: flex; flex-direction: column; gap: 7px; font-size: 9px; text-transform: uppercase; letter-spacing: .08em; }
 .form-grid .wide { grid-column: 1 / -1; }
 .form-grid input, .form-grid select, .form-grid textarea, .auth-form input, .payment-box input { height: 47px; border: 1px solid var(--line); background: var(--paper); padding: 0 13px; outline: none; text-transform: none; letter-spacing: 0; font-size: 12px; }
+.form-grid input:disabled, .form-grid select:disabled { background: var(--cream); color: var(--ink-soft); cursor: not-allowed; }
 .form-grid textarea { height: 85px; padding-top: 12px; resize: vertical; }
 .payment-box { padding: 18px; background: var(--cream); display: grid; gap: 14px; }
 .payment-box > div { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }

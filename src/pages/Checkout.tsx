@@ -4,6 +4,36 @@ import { money } from '../lib/utils';
 import type { Page, Product } from '../types';
 import type { CartItem } from '../hooks/useCart';
 
+const NAGA_CITY_BARANGAYS = [
+  'Abella',
+  'Bagumbayan Norte',
+  'Bagumbayan Sur',
+  'Balatas',
+  'Calauag',
+  'Cararayan',
+  'Carolina',
+  'Concepcion Grande',
+  'Concepcion Pequeña',
+  'Dayangdang',
+  'Del Rosario',
+  'Dinaga',
+  'Igualdad Interior',
+  'Lerma',
+  'Liboton',
+  'Mabolo',
+  'Pacol',
+  'Panicuason',
+  'Peñafrancia',
+  'Sabang',
+  'San Felipe',
+  'San Francisco (Pob.)',
+  'San Isidro',
+  'Santa Cruz',
+  'Tabuco',
+  'Tinago',
+  'Triangulo',
+];
+
 export function Checkout({ items, cartItems, navigate, onSubmitOrder, isProcessing }: { items: Product[]; cartItems: CartItem[]; navigate: (page: Page) => void; onSubmitOrder: (formData: FormData) => Promise<void>; isProcessing: boolean }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,11 +93,13 @@ export function Checkout({ items, cartItems, navigate, onSubmitOrder, isProcessi
       const firstName = (formData.get('firstName') as string)?.trim();
       const lastName = (formData.get('lastName') as string)?.trim();
       const mobileNumber = (formData.get('mobileNumber') as string)?.trim();
-      const streetAddress = (formData.get('streetAddress') as string)?.trim();
+      const houseNumber = (formData.get('houseNumber') as string)?.trim();
+      const street = (formData.get('street') as string)?.trim();
+      const additionalDetails = (formData.get('additionalDetails') as string)?.trim();
       const barangay = (formData.get('barangay') as string)?.trim();
-      const cityMunicipality = (formData.get('cityMunicipality') as string)?.trim();
-      const province = (formData.get('province') as string)?.trim();
-      const region = (formData.get('region') as string)?.trim();
+      const cityMunicipality = 'Naga City';
+      const province = 'Camarines Sur';
+      const region = 'Region V (Bicol Region)';
       const postalCode = (formData.get('postalCode') as string)?.trim();
 
       const errors: Record<string, string> = {};
@@ -81,11 +113,9 @@ export function Checkout({ items, cartItems, navigate, onSubmitOrder, isProcessi
       } else if (!validateMobileNumber(mobileNumber)) {
         errors.mobileNumber = 'Please enter a valid Philippine mobile number (e.g., 09123456789 or +639123456789)';
       }
-      if (!streetAddress) errors.streetAddress = 'Street address is required';
-      if (!barangay) errors.barangay = 'Barangay is required';
-      if (!cityMunicipality) errors.cityMunicipality = 'City/Municipality is required';
-      if (!province) errors.province = 'Province is required';
-      if (!region) errors.region = 'Region is required';
+      if (!houseNumber) errors.houseNumber = 'House/building number is required';
+      if (!street) errors.street = 'Street name is required';
+      if (!barangay) errors.barangay = 'Please select a barangay';
       if (!postalCode) {
         errors.postalCode = 'Postal code is required';
       } else if (!validatePostalCode(postalCode)) {
@@ -102,7 +132,9 @@ export function Checkout({ items, cartItems, navigate, onSubmitOrder, isProcessi
       formData.set('firstName', firstName);
       formData.set('lastName', lastName);
       formData.set('mobileNumber', mobileNumber);
-      formData.set('streetAddress', streetAddress);
+      formData.set('houseNumber', houseNumber);
+      formData.set('street', street);
+      formData.set('additionalDetails', additionalDetails);
       formData.set('barangay', barangay);
       formData.set('cityMunicipality', cityMunicipality);
       formData.set('province', province);
@@ -151,34 +183,45 @@ export function Checkout({ items, cartItems, navigate, onSubmitOrder, isProcessi
               <input name="lastName" required placeholder="Dela Cruz" />
               {fieldErrors.lastName && <span style={{ color: '#dc2626', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>{fieldErrors.lastName}</span>}
             </label>
-            <label className="wide">
-              House Number / Street / Building
-              <input name="streetAddress" required placeholder="123 Main Street, Building A, Unit 5B" />
-              {fieldErrors.streetAddress && <span style={{ color: '#dc2626', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>{fieldErrors.streetAddress}</span>}
-            </label>
             <label>
+              House / Building Number
+              <input name="houseNumber" required placeholder="123" />
+              {fieldErrors.houseNumber && <span style={{ color: '#dc2626', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>{fieldErrors.houseNumber}</span>}
+            </label>
+            <label className="wide">
+              Street Name
+              <input name="street" required placeholder="Main Street" />
+              {fieldErrors.street && <span style={{ color: '#dc2626', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>{fieldErrors.street}</span>}
+            </label>
+            <label className="wide">
+              Additional Details (Optional)
+              <input name="additionalDetails" placeholder="Building A, Unit 5B, Near landmark" />
+            </label>
+            <label className="wide">
               Barangay
-              <input name="barangay" required placeholder="Barangay name" />
+              <select name="barangay" required defaultValue="">
+                <option value="">Select a barangay</option>
+                {NAGA_CITY_BARANGAYS.map((barangay) => (
+                  <option key={barangay} value={barangay}>{barangay}</option>
+                ))}
+              </select>
               {fieldErrors.barangay && <span style={{ color: '#dc2626', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>{fieldErrors.barangay}</span>}
             </label>
             <label>
               City / Municipality
-              <input name="cityMunicipality" required placeholder="City or municipality" />
-              {fieldErrors.cityMunicipality && <span style={{ color: '#dc2626', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>{fieldErrors.cityMunicipality}</span>}
+              <input name="cityMunicipality" value="Naga City" disabled readOnly />
             </label>
             <label>
               Province
-              <input name="province" required placeholder="Province" />
-              {fieldErrors.province && <span style={{ color: '#dc2626', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>{fieldErrors.province}</span>}
+              <input name="province" value="Camarines Sur" disabled readOnly />
             </label>
             <label>
               Region
-              <input name="region" required placeholder="Region (e.g., NCR, CALABARZON)" />
-              {fieldErrors.region && <span style={{ color: '#dc2626', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>{fieldErrors.region}</span>}
+              <input name="region" value="Region V (Bicol Region)" disabled readOnly />
             </label>
             <label>
               Postal Code
-              <input name="postalCode" required type="text" placeholder="1000" maxLength={4} />
+              <input name="postalCode" required type="text" placeholder="4400" maxLength={4} />
               {fieldErrors.postalCode && <span style={{ color: '#dc2626', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>{fieldErrors.postalCode}</span>}
             </label>
           </div>

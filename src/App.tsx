@@ -172,25 +172,26 @@ export default function App() {
       const shippingCost = subtotal >= 5000 ? 0 : 150;
       const total = subtotal + shippingCost;
 
-      // Build shipping address from form data (Philippine format with manual text inputs)
+      // Build shipping address from form data (Philippine format with Naga City restriction)
       const shippingAddress = {
         email: formData.get('email') as string,
         first_name: formData.get('firstName') as string,
         last_name: formData.get('lastName') as string,
         mobile_number: formData.get('mobileNumber') as string,
-        street_address: formData.get('streetAddress') as string,
+        house_number: formData.get('houseNumber') as string,
+        street: formData.get('street') as string,
+        additional_details: formData.get('additionalDetails') as string || null,
         barangay: formData.get('barangay') as string,
-        city_municipality: formData.get('cityMunicipality') as string,
-        province: formData.get('province') as string,
-        region: formData.get('region') as string,
+        city_municipality: 'Naga City',
+        province: 'Camarines Sur',
+        region: 'Region V (Bicol Region)',
         postal_code: formData.get('postalCode') as string,
       };
 
       // Validate shipping address (basic check - detailed validation in Checkout.tsx)
       if (!shippingAddress.email || !shippingAddress.first_name || !shippingAddress.last_name ||
-          !shippingAddress.mobile_number || !shippingAddress.street_address || !shippingAddress.barangay ||
-          !shippingAddress.city_municipality || !shippingAddress.province || !shippingAddress.region ||
-          !shippingAddress.postal_code) {
+          !shippingAddress.mobile_number || !shippingAddress.house_number || !shippingAddress.street ||
+          !shippingAddress.barangay || !shippingAddress.postal_code) {
         throw new Error('Please fill in all required fields');
       }
 
