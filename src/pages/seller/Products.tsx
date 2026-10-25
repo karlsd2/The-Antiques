@@ -4,12 +4,11 @@ import { Badge } from '../../components/Badge';
 import { money } from '../../lib/utils';
 import type { Page, Product, Category } from '../../types';
 import { useAuth } from '../../hooks/useAuth';
-import { useProducts, useCategories, deleteProduct, createProduct, updateProduct } from '../../hooks/useProducts';
+import { useCategories, deleteProduct, createProduct, updateProduct } from '../../hooks/useProducts';
 import { supabase } from '../../lib/supabase';
 
-export function Products({ navigate, onProductCreated }: { navigate: (page: Page) => void; onProductCreated?: () => void }) {
+export function Products({ navigate, products, loading, error, refetch, onProductCreated }: { navigate: (page: Page) => void; products: Product[]; loading: boolean; error: Error | null; refetch: () => void; onProductCreated?: () => void }) {
   const { user, profile } = useAuth();
-  const { products, loading, error, refetch } = useProducts({ sellerId: user?.id });
   const { categories } = useCategories();
   const [showAdd, setShowAdd] = useState(false);
   const [showEdit, setShowEdit] = useState<Product | null>(null);

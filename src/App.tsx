@@ -54,7 +54,7 @@ export default function App() {
   const { categories, loading: categoriesLoading, error: categoriesError } = useCategories();
 
   // Fetch seller-specific products for dashboard
-  const { products: sellerProducts, loading: sellerProductsLoading, refetch: refetchSellerProducts } = useProducts({ sellerId: user?.id });
+  const { products: sellerProducts, loading: sellerProductsLoading, error: sellerProductsError, refetch: refetchSellerProducts } = useProducts({ sellerId: user?.id });
 
   // Fetch wishlist for authenticated users
   const { wishlist, toggleWishlist, loading: wishlistLoading, error: wishlistError } = useWishlist(user?.id || null);
@@ -275,7 +275,7 @@ export default function App() {
   } else if (page === "dashboard") {
     content = <Dashboard navigate={navigate} products={sellerProducts} loading={sellerProductsLoading} profile={profile} user={user} refetch={refetchSellerProducts} />;
   } else if (page === "products") {
-    content = <Products navigate={navigate} onProductCreated={refetchSellerProducts} />;
+    content = <Products navigate={navigate} products={sellerProducts} loading={sellerProductsLoading} error={sellerProductsError} refetch={refetchSellerProducts} onProductCreated={refetchSellerProducts} />;
   } else if (page === "seller-orders") {
     content = <SellerOrders />;
   } else if (page === "sales") {

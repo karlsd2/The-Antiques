@@ -19,8 +19,17 @@ export function useProducts(filters?: {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   const subscriptionRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+  const previousSellerIdRef = useRef<string | undefined>(filters?.sellerId)
 
   useEffect(() => {
+    // Reset products state when sellerId changes to prevent showing stale data from previous session
+    // This ensures that when a seller logs out and a different seller logs in, the previous seller's
+    // products are not displayed during the loading phase
+    if (filters?.sellerId !== previousSellerIdRef.current) {
+      setProducts([])
+      previousSellerIdRef.current = filters?.sellerId
+    }
+
     fetchProducts()
 
     // Only enable Realtime for buyer-facing product lists (not seller-specific views)
