@@ -45,7 +45,7 @@ export function Auth({ mode, navigate, onLogin }: { mode: "login" | "register" |
             <span className="eyebrow">{mode === "login" ? "Member access" : mode === "register" ? "Create an account" : "Password recovery"}</span>
             <h1>{copy[0]}</h1>
             <p>{copy[1]}</p>
-            {(mode === "login" || mode === "register") && (
+            {mode === "register" && (
               <div className="role-cards">
                 <button className={selectedRole === "buyer" ? "active" : ""} onClick={() => setSelectedRole("buyer")}>
                   <Icon name="bag" />
