@@ -18,6 +18,26 @@ export function Products({ navigate, products, loading, error, refetch, onProduc
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'active' | 'draft' | 'sold' | 'all'>('all');
+
+  // Filter products based on search query and status
+  const filteredProducts = products.filter((p) => !removed.includes(p.id)).filter((product) => {
+    // Filter by status
+    if (statusFilter !== 'all' && product.status !== statusFilter) {
+      return false;
+    }
+
+    // Filter by search query
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      product.name.toLowerCase().includes(query) ||
+      (product.category_name && product.category_name.toLowerCase().includes(query)) ||
+      (product.condition && product.condition.toLowerCase().includes(query)) ||
+      (product.year && product.year.toLowerCase().includes(query))
+    );
+  });
 
   const handleDelete = async (productId: string) => {
     try {
@@ -227,18 +247,19 @@ export function Products({ navigate, products, loading, error, refetch, onProduc
       <div className="table-card">
         <div className="table-tools">
           <div className="tab-buttons">
-            <button className="active">Active {products.filter(p => p.status === 'active').length}</button>
-            <button>Drafts {products.filter(p => p.status === 'draft').length}</button>
-            <button>Sold {products.filter(p => p.status === 'sold').length}</button>
+            <button className={statusFilter === 'all' ? 'active' : ''} onClick={() => setStatusFilter('all')}>All {products.filter(p => !removed.includes(p.id)).length}</button>
+            <button className={statusFilter === 'active' ? 'active' : ''} onClick={() => setStatusFilter('active')}>Active {products.filter(p => p.status === 'active').length}</button>
+            <button className={statusFilter === 'draft' ? 'active' : ''} onClick={() => setStatusFilter('draft')}>Drafts {products.filter(p => p.status === 'draft').length}</button>
+            <button className={statusFilter === 'sold' ? 'active' : ''} onClick={() => setStatusFilter('sold')}>Sold {products.filter(p => p.status === 'sold').length}</button>
           </div>
-          <label className="search-field"><Icon name="search" size={17} /><input placeholder="Search inventory" /></label>
+          <label className="search-field"><Icon name="search" size={17} /><input placeholder="Search inventory" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></label>
         </div>
         <div className="inventory-list">
           {loading ? (
             <p>Loading...</p>
           ) : error ? (
             <p>Error: {error.message}</p>
-          ) : products.filter((p) => !removed.includes(p.id)).map((product) => (
+          ) : filteredProducts.map((product) => (
             <div className="inventory-row" key={product.id}>
               <img src={product.images?.[0] || ''} alt="" />
               <div className="inventory-name">
