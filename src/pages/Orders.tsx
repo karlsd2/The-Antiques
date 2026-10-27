@@ -13,6 +13,19 @@ export function Orders({ seller = false }: { seller?: boolean }) {
   const [viewingOrder, setViewingOrder] = useState<Order | null>(null);
   const [updateLoading, setUpdateLoading] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Filter orders based on search query
+  const filteredOrders = orders.filter((order) => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      order.order_number.toLowerCase().includes(query) ||
+      (seller && order.buyer_name && order.buyer_name.toLowerCase().includes(query)) ||
+      (order.items?.[0]?.product_name && order.items[0].product_name.toLowerCase().includes(query)) ||
+      order.status.toLowerCase().includes(query)
+    );
+  });
 
   const handleUpdateClick = (order: Order) => {
     setUpdatingOrder(order);
@@ -50,8 +63,8 @@ export function Orders({ seller = false }: { seller?: boolean }) {
       </div>
       <div className="table-card">
         <div className="table-tools">
-          <strong>{orders.length} orders</strong>
-          <label className="search-field"><Icon name="search" size={17} /><input placeholder="Search orders" /></label>
+          <strong>{filteredOrders.length} orders</strong>
+          <label className="search-field"><Icon name="search" size={17} /><input placeholder="Search orders" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></label>
         </div>
         <div className="data-table">
           <div className="table-row header">
@@ -66,10 +79,10 @@ export function Orders({ seller = false }: { seller?: boolean }) {
             <SkeletonRow count={5} />
           ) : error ? (
             <div className="table-row"><span>Error: {error.message}</span></div>
-          ) : orders.length === 0 ? (
-            <div className="table-row"><span>No orders yet.</span></div>
+          ) : filteredOrders.length === 0 ? (
+            <div className="table-row"><span>{searchQuery ? 'No orders match your search.' : 'No orders yet.'}</span></div>
           ) : (
-            orders.map((order) => (
+            filteredOrders.map((order) => (
               <div className="table-row" key={order.id}>
                 <strong>{order.order_number}</strong>
                 <span>{seller && order.buyer_name ? <small>{order.buyer_name} · </small> : ''}{order.items?.[0]?.product_name || 'Order'}</span>
