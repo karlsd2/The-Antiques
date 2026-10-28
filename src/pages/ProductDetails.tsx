@@ -4,9 +4,11 @@ import { Badge } from '../components/Badge';
 import { money } from '../lib/utils';
 import { supabase } from '../lib/supabase';
 import type { Page, Product, Profile } from '../types';
+import type { User } from '@supabase/supabase-js';
 
-export function ProductDetails({ product, favorite, toggleFavorite, addToCart, navigate }: { product: Product; favorite: boolean; toggleFavorite: () => void; addToCart: () => void; navigate: (page: Page, product?: Product, sellerId?: string) => void }) {
+export function ProductDetails({ product, favorite, toggleFavorite, addToCart, navigate, user }: { product: Product; favorite: boolean; toggleFavorite: () => void; addToCart: () => void; navigate: (page: Page, product?: Product, sellerId?: string, conversationId?: string) => void; user: User | null }) {
   const [sellerProfile, setSellerProfile] = useState<Profile | null>(null);
+  const [messageLoading, setMessageLoading] = useState(false);
 
   useEffect(() => {
     if (product.seller_id) {
@@ -26,6 +28,72 @@ export function ProductDetails({ product, favorite, toggleFavorite, addToCart, n
       setSellerProfile(data);
     } catch (err) {
       console.error('Error fetching seller profile:', err);
+    }
+  }
+
+  async function handleMessageSeller() {
+    if (!user) {
+      // User is not logged in, navigate to login
+      navigate("login");
+      return;
+    }
+
+    if (!user.id) {
+      alert('Unable to identify user. Please try logging in again.');
+      return;
+    }
+
+    // Check if user is the seller trying to message themselves
+    if (user.id === product.seller_id) {
+      alert('You cannot message yourself about your own product.');
+      return;
+    }
+
+    setMessageLoading(true);
+
+    try {
+      // Check if conversation already exists
+      const { data: existingConversation, error: fetchError } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('buyer_id', user.id)
+        .eq('seller_id', product.seller_id)
+        .eq('product_id', product.id)
+        .single();
+
+      let conversationId: string;
+
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        // PGRST116 is the error code for "not found"
+        throw fetchError;
+      }
+
+      if (existingConversation) {
+        // Conversation exists, reuse it
+        conversationId = existingConversation.id;
+      } else {
+        // Create new conversation
+        const { data: newConversation, error: createError } = await supabase
+          .from('conversations')
+          .insert({
+            buyer_id: user.id,
+            seller_id: product.seller_id,
+            product_id: product.id,
+          })
+          .select('id')
+          .single();
+
+        if (createError) throw createError;
+        conversationId = newConversation.id;
+      }
+
+      // Navigate to messages page with the conversation ID
+      navigate("messages", undefined, undefined, conversationId);
+    } catch (err) {
+      console.error('Error opening conversation:', err);
+      alert('Failed to open conversation. Please try again.');
+    } finally {
+      setMessageLoading(false);
     }
   }
 
@@ -83,7 +151,16 @@ export function ProductDetails({ product, favorite, toggleFavorite, addToCart, n
               <strong>{displayName}</strong>
               {location && <span><Icon name="location" size={14} /> {location}</span>}
             </div>
-            <button onClick={() => navigate("seller-shop", undefined, product.seller_id)}>View shop</button>
+            <div className="seller-actions">
+              <button onClick={() => navigate("seller-shop", undefined, product.seller_id)}>View shop</button>
+              <button
+                className="button outline"
+                onClick={handleMessageSeller}
+                disabled={messageLoading}
+              >
+                {messageLoading ? 'Opening...' : 'Message Seller'}
+              </button>
+            </div>
           </div>
         </div>
       </div>

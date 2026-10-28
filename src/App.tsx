@@ -18,6 +18,7 @@ import { Confirmation } from "./pages/Confirmation";
 import { Orders } from "./pages/Orders";
 import { Profile as ProfilePage } from "./pages/Profile";
 import { Wishlist } from "./pages/Wishlist";
+import { Messages } from "./pages/Messages";
 import { Auth } from "./pages/Auth";
 import { Dashboard } from "./pages/seller/Dashboard";
 import { Products } from "./pages/seller/Products";
@@ -27,8 +28,8 @@ import { SellerProfile } from "./pages/seller/SellerProfile";
 import { SellerShop } from "./pages/SellerShop";
 
 // Page sets for role-based access control (defined outside component to avoid recreation)
-const buyerPages: Set<Page> = new Set(["home", "shop", "product", "wishlist", "cart", "checkout", "confirmation", "orders", "profile", "seller-shop"]);
-const sellerPages: Set<Page> = new Set(["dashboard", "products", "seller-orders", "sales", "seller-profile"]);
+const buyerPages: Set<Page> = new Set(["home", "shop", "product", "wishlist", "cart", "checkout", "confirmation", "orders", "profile", "messages", "seller-shop"]);
+const sellerPages: Set<Page> = new Set(["dashboard", "products", "messages", "seller-orders", "sales", "seller-profile"]);
 const authPages: Set<Page> = new Set(["login", "register", "forgot"]);
 
 export default function App() {
@@ -36,6 +37,7 @@ export default function App() {
   const [page, setPage] = useState<Page>("login");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedSellerId, setSelectedSellerId] = useState<string | null>(null);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [lastOrder, setLastOrder] = useState<{ id: string; order_number: string } | null>(null);
   const [orderProcessing, setOrderProcessing] = useState(false);
 
@@ -67,7 +69,7 @@ export default function App() {
 
   const role = profile?.role || "buyer";
 
-  const navigate = (destination: Page, product?: Product, sellerId?: string) => {
+  const navigate = (destination: Page, product?: Product, sellerId?: string, conversationId?: string) => {
     // Role protection: check if the destination is accessible to the current role
     if (!authPages.has(destination)) {
       if (role === "buyer" && !buyerPages.has(destination)) {
@@ -86,6 +88,12 @@ export default function App() {
 
     if (product) setSelectedProduct(product);
     if (sellerId) setSelectedSellerId(sellerId);
+    if (conversationId) {
+      setSelectedConversationId(conversationId);
+    } else if (destination !== "messages") {
+      // Reset conversation ID when navigating away from messages page without a specific conversation
+      setSelectedConversationId(null);
+    }
     setPage(destination);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -253,7 +261,7 @@ export default function App() {
   } else if (page === "shop") {
     content = <Shop navigate={navigate} favorites={wishlist} toggleFavorite={toggleFavorite} products={products} categories={categories} loading={productsLoading || categoriesLoading} error={productsError || categoriesError} />;
   } else if (page === "product") {
-    content = selectedProduct ? <ProductDetails product={selectedProduct} favorite={wishlist.includes(selectedProduct.id)} toggleFavorite={() => toggleFavorite(selectedProduct.id)} addToCart={() => addToCart(selectedProduct)} navigate={navigate} /> : null;
+    content = selectedProduct ? <ProductDetails product={selectedProduct} favorite={wishlist.includes(selectedProduct.id)} toggleFavorite={() => toggleFavorite(selectedProduct.id)} addToCart={() => addToCart(selectedProduct)} navigate={navigate} user={user} /> : null;
   } else if (page === "wishlist") {
     content = <Wishlist navigate={navigate} favorites={wishlist} toggleFavorite={toggleFavorite} products={products} loading={wishlistLoading} error={wishlistError} />;
   } else if (page === "cart") {
@@ -272,6 +280,8 @@ export default function App() {
     content = <Orders />;
   } else if (page === "profile") {
     content = <ProfilePage navigate={navigate} onLogout={handleLogout} profile={profile} updateProfile={updateProfile} user={user} />;
+  } else if (page === "messages") {
+    content = <Messages role={role} navigate={navigate} products={products} conversationId={selectedConversationId || undefined} />;
   } else if (page === "dashboard") {
     content = <Dashboard navigate={navigate} products={sellerProducts} loading={sellerProductsLoading} profile={profile} user={user} refetch={refetchSellerProducts} />;
   } else if (page === "products") {

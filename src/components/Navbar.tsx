@@ -18,8 +18,8 @@ export function Navbar({
   const [open, setOpen] = useState(false);
   const [showLogoutPopup, setShowLogoutPopup] = useState(false);
   const logoutButtonRef = useRef<HTMLDivElement>(null);
-  const buyerNav: [string, Page][] = [["Home", "home"], ["Shop", "shop"], ["Categories", "shop"], ["Wishlist", "wishlist"], ["Orders", "orders"]];
-  const sellerNav: [string, Page][] = [["Dashboard", "dashboard"], ["Products", "products"], ["Orders", "seller-orders"], ["Sales", "sales"]];
+  const buyerNav: [string, Page][] = [["Home", "home"], ["Shop", "shop"], ["Categories", "shop"], ["Wishlist", "wishlist"], ["Messages", "messages"], ["Orders", "orders"]];
+  const sellerNav: [string, Page][] = [["Dashboard", "dashboard"], ["Products", "products"], ["Messages", "messages"], ["Orders", "seller-orders"], ["Sales", "sales"]];
   const nav = role === "buyer" ? buyerNav : sellerNav;
 
   // Close popup when clicking outside
@@ -77,6 +77,9 @@ export function Navbar({
               <Icon name="bag" size={21} />{cartCount > 0 && <span>{cartCount}</span>}
             </button>
           )}
+          <button className="icon-button" onClick={() => onNavigate("messages")} aria-label="Messages">
+            <Icon name="message" size={21} />
+          </button>
           <button className="icon-button" onClick={() => onNavigate(role === "buyer" ? "profile" : "seller-profile")} aria-label="Profile"><Icon name="user" size={21} /></button>
           <div className="icon-button-wrapper" ref={logoutButtonRef}>
             <button className="icon-button" onClick={handleLogoutClick} aria-label="Sign out">

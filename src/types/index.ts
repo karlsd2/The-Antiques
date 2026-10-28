@@ -17,6 +17,7 @@ export type Page =
   | "confirmation"
   | "orders"
   | "profile"
+  | "messages"
   | "dashboard"
   | "products"
   | "seller-orders"
@@ -51,4 +52,30 @@ export type Category = {
   id: string;
   name: string;
   created_at: string;
+};
+
+export type ChatMessage = {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  body: string;
+  created_at: string;
+  read_at: string | null;
+  is_me: boolean;
+};
+
+export type Conversation = {
+  id: string;
+  buyer_id: string;
+  seller_id: string;
+  product_id: string;
+  created_at: string;
+  updated_at: string;
+  product: Product;
+  buyer_name: string;
+  seller_name: string;
+  seller_initials: string;
+  last_message?: string;
+  unread_count: number;
+  messages?: { body: string }[];
 };
