@@ -25,7 +25,7 @@ export function ChatPanel({
 }: ChatPanelProps) {
   return (
     <section className="chat-panel">
-      <ChatHeader conversation={conversation} role={role} />
+      <ChatHeader conversation={conversation} role={role} onNavigate={onNavigate} />
 
       <ChatProduct product={conversation.product} onNavigate={onNavigate} />
 
