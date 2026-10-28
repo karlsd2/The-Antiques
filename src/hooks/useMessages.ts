@@ -88,6 +88,10 @@ export function useMessages(conversationId: string | null, currentUserId: string
           if (!mounted) return
 
           const newMessage = payload.new as any
+
+          // Ignore messages sent by the current user (they're already in the list)
+          if (newMessage.sender_id === currentUserId) return
+
           const transformedMessage: Message = {
             id: newMessage.id,
             conversation_id: newMessage.conversation_id,
