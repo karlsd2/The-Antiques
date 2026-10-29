@@ -38,7 +38,7 @@ export function Messages({
   }, [initialConversationId]);
 
   // Fetch messages for selected conversation
-  const { messages, loading: messagesLoading, error: messagesError, refetch } = useMessages(
+  const { messages, loading: messagesLoading, error: messagesError, refetch, addMessage } = useMessages(
     activeId || null,
     user?.id || null
   );
@@ -93,21 +93,26 @@ export function Messages({
         return;
       }
 
-      // Send the message to Supabase
-      const { error: messageError } = await supabase
+      // Send the message to Supabase and return the inserted data
+      const { data: messageData, error: messageError } = await supabase
         .from('messages')
         .insert({
           conversation_id: conversationId,
           sender_id: user.id,
           body: messageBody,
-        });
+        })
+        .select()
+        .single();
 
       if (messageError) throw messageError;
 
       // Clear the draft
       setDraft('');
 
-      // Note: Realtime subscriptions will handle message and conversation updates
+      // Immediately add the message to local state so sender sees it without waiting for Realtime
+      if (messageData) {
+        addMessage(messageData);
+      }
     } catch (err) {
       console.error('Error sending message:', err);
       alert('Failed to send message. Please try again.');

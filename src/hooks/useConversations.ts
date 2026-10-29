@@ -53,9 +53,11 @@ export function useConversations(userId: string | null, role: 'buyer' | 'seller'
           filter: `${column}=eq.${userId}`,
         },
         async (payload) => {
-          // Refetch conversations on any change to ensure data consistency
-          // This handles both new conversations and updated conversations (via trigger)
-          await fetchConversations()
+          // Only refetch if it's a new conversation (INSERT)
+          // Ignore UPDATE events from timestamp triggers
+          if (payload.eventType === 'INSERT') {
+            await fetchConversations()
+          }
         }
       )
       .subscribe()

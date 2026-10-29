@@ -17,6 +17,19 @@ export function useMessages(conversationId: string | null, currentUserId: string
   const [error, setError] = useState<Error | null>(null)
   const channelRef = useRef<any>(null)
 
+  const addMessage = (messageData: any) => {
+    const transformedMessage: Message = {
+      id: messageData.id,
+      conversation_id: messageData.conversation_id,
+      sender_id: messageData.sender_id,
+      body: messageData.body,
+      created_at: messageData.created_at,
+      read_at: messageData.read_at,
+      is_me: messageData.sender_id === currentUserId,
+    }
+    setMessages((prev) => [...prev, transformedMessage])
+  }
+
   useEffect(() => {
     if (!conversationId || !currentUserId) {
       setMessages([])
@@ -89,9 +102,6 @@ export function useMessages(conversationId: string | null, currentUserId: string
 
           const newMessage = payload.new as any
 
-          // Ignore messages sent by the current user (they're already in the list)
-          if (newMessage.sender_id === currentUserId) return
-
           const transformedMessage: Message = {
             id: newMessage.id,
             conversation_id: newMessage.conversation_id,
@@ -103,6 +113,7 @@ export function useMessages(conversationId: string | null, currentUserId: string
           }
 
           // Add new message to the list if it doesn't already exist
+          // This prevents duplicates when the sender's own message arrives via Realtime
           setMessages((prev) => {
             const exists = prev.some((msg) => msg.id === transformedMessage.id)
             if (exists) return prev
@@ -157,5 +168,5 @@ export function useMessages(conversationId: string | null, currentUserId: string
     }
   }
 
-  return { messages, loading, error, refetch }
+  return { messages, loading, error, refetch, addMessage }
 }
