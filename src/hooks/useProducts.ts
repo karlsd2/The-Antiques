@@ -301,7 +301,12 @@ export function useProducts(filters?: {
         updated_at: item.updated_at,
       }))
 
-      setProducts(transformedData)
+      // Additional safety check: filter by sellerId to ensure only current seller's products are displayed
+      const filteredData = filters?.sellerId
+        ? transformedData.filter(p => p.seller_id === filters.sellerId)
+        : transformedData
+
+      setProducts(filteredData)
     } catch (err) {
       setError(err as Error)
       console.error('Error fetching products:', err)
