@@ -21,14 +21,7 @@ export function useProducts(filters?: {
   const subscriptionRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
 
   useEffect(() => {
-    // Don't fetch if sellerId is undefined - wait for auth to complete
-    if (filters?.sellerId === undefined) {
-      setProducts([])
-      setLoading(false)
-      return
-    }
-
-    // Always reset products when sellerId filter is present to prevent showing stale data
+    // Only reset products when sellerId filter is present to prevent showing stale data
     // This ensures that after an app update/reload, only the current seller's products are displayed
     if (filters?.sellerId) {
       setProducts([])
