@@ -98,6 +98,7 @@ export function Navbar({
           <button className="menu-button" onClick={() => setOpen(!open)} aria-label="Menu"><Icon name={open ? "close" : "menu"} size={23} /></button>
         </div>
       </header>
+      {open && <div className="menu-backdrop open" onClick={() => setOpen(false)} />}
     </>
   );
 }
