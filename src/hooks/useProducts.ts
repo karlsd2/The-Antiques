@@ -247,6 +247,14 @@ export function useProducts(filters?: {
       setLoading(true)
       setError(null)
 
+      // If sellerId filter is expected (filters has sellerId property) but is undefined/null,
+      // don't fetch yet. This prevents fetching all products during session restoration after page refresh.
+      if ('sellerId' in (filters || {}) && (filters?.sellerId === undefined || filters?.sellerId === null)) {
+        setProducts([])
+        setLoading(false)
+        return
+      }
+
       let query = supabase
         .from('products')
         .select(`
