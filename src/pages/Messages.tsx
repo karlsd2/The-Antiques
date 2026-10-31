@@ -76,10 +76,10 @@ export function Messages({
       .includes(search.toLowerCase());
   });
 
-  const sendMessage = async (event: React.FormEvent) => {
+  const sendMessage = async (event: React.FormEvent, images: File[] = []) => {
     event.preventDefault();
 
-    if (!draft.trim() || !user?.id) return;
+    if (!draft.trim() && images.length === 0 || !user?.id) return;
 
     const messageBody = draft.trim();
 
@@ -93,6 +93,30 @@ export function Messages({
         return;
       }
 
+      // Upload images if any
+      const imageUrls: string[] = [];
+      for (const file of images) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random()}.${fileExt}`;
+        const filePath = `message-images/${user.id}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('message-images')
+          .upload(filePath, file);
+
+        if (uploadError) {
+          console.error('Failed to upload image:', uploadError);
+          alert(`Failed to upload image: ${uploadError.message}. Please check if the 'message-images' storage bucket exists and has proper permissions.`);
+          return;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('message-images')
+          .getPublicUrl(filePath);
+
+        imageUrls.push(publicUrl);
+      }
+
       // Send the message to Supabase and return the inserted data
       const { data: messageData, error: messageError } = await supabase
         .from('messages')
@@ -100,6 +124,7 @@ export function Messages({
           conversation_id: conversationId,
           sender_id: user.id,
           body: messageBody,
+          images: imageUrls,
         })
         .select()
         .single();
@@ -145,6 +170,7 @@ export function Messages({
     created_at: msg.created_at,
     read_at: msg.read_at,
     is_me: msg.is_me,
+    images: msg.images,
   }));
 
   if (conversationsLoading) {

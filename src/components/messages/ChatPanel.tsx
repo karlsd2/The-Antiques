@@ -10,7 +10,7 @@ interface ChatPanelProps {
   messages: ChatMessage[];
   draft: string;
   onDraftChange: (value: string) => void;
-  onSendMessage: (event: React.FormEvent) => void;
+  onSendMessage: (event: React.FormEvent, images: File[]) => void;
   onNavigate: (page: Page, product?: Product) => void;
 }
 

@@ -31,7 +31,8 @@ CREATE TABLE IF NOT EXISTS public.messages (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   conversation_id UUID REFERENCES public.conversations(id) ON DELETE CASCADE NOT NULL,
   sender_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
-  body TEXT NOT NULL,
+  body TEXT,
+  images TEXT[],
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()) NOT NULL,
   read_at TIMESTAMP WITH TIME ZONE
 );
@@ -182,6 +183,7 @@ CREATE POLICY "Users can view messages in their conversations"
 
 -- Users can insert messages into conversations they participate in
 -- Prevents sender impersonation by requiring auth.uid() = sender_id
+-- Allows messages with only text, only images, or both
 DROP POLICY IF EXISTS "Users can send messages in their conversations" ON public.messages;
 CREATE POLICY "Users can send messages in their conversations"
   ON public.messages
@@ -189,6 +191,9 @@ CREATE POLICY "Users can send messages in their conversations"
   WITH CHECK (
     -- Must be the sender (prevents impersonation)
     auth.uid() = sender_id
+    AND
+    -- Must have either body text or images (or both)
+    (body IS NOT NULL OR images IS NOT NULL)
     AND
     -- Must be in a conversation they participate in
     EXISTS (

@@ -62,6 +62,7 @@ export type ChatMessage = {
   created_at: string;
   read_at: string | null;
   is_me: boolean;
+  images?: string[];
 };
 
 export type Conversation = {

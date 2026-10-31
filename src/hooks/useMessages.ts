@@ -9,6 +9,7 @@ export interface Message {
   created_at: string
   read_at: string | null
   is_me: boolean
+  images?: string[]
 }
 
 export function useMessages(conversationId: string | null, currentUserId: string | null) {
@@ -26,6 +27,7 @@ export function useMessages(conversationId: string | null, currentUserId: string
       created_at: messageData.created_at,
       read_at: messageData.read_at,
       is_me: messageData.sender_id === currentUserId,
+      images: messageData.images,
     }
     setMessages((prev) => [...prev, transformedMessage])
   }
@@ -61,6 +63,7 @@ export function useMessages(conversationId: string | null, currentUserId: string
           created_at: item.created_at,
           read_at: item.read_at,
           is_me: item.sender_id === currentUserId,
+          images: item.images,
         }))
 
         if (mounted) {
@@ -110,6 +113,7 @@ export function useMessages(conversationId: string | null, currentUserId: string
             created_at: newMessage.created_at,
             read_at: newMessage.read_at,
             is_me: newMessage.sender_id === currentUserId,
+            images: newMessage.images,
           }
 
           // Add new message to the list if it doesn't already exist
@@ -157,6 +161,7 @@ export function useMessages(conversationId: string | null, currentUserId: string
         created_at: item.created_at,
         read_at: item.read_at,
         is_me: item.sender_id === currentUserId,
+        images: item.images,
       }))
 
       setMessages(transformedData)

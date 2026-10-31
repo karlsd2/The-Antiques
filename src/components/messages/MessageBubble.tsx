@@ -26,7 +26,20 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   return (
     <div className={`message-row ${message.is_me ? 'mine' : ''}`}>
       <div className="message-bubble">
-        <p>{message.body}</p>
+        {message.body && <p>{message.body}</p>}
+
+        {message.images && message.images.length > 0 && (
+          <div className="message-images">
+            {message.images.map((imageUrl, index) => (
+              <img
+                key={index}
+                src={imageUrl}
+                alt="Message attachment"
+                className="message-image"
+              />
+            ))}
+          </div>
+        )}
 
         <span>
           {formatTime(message.created_at)}
