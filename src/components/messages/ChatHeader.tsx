@@ -7,9 +7,10 @@ interface ChatHeaderProps {
   conversation: Conversation;
   role: Role;
   onNavigate: (page: Page, product?: Product) => void;
+  onDeleteConversation: () => void;
 }
 
-export function ChatHeader({ conversation, role, onNavigate }: ChatHeaderProps) {
+export function ChatHeader({ conversation, role, onNavigate, onDeleteConversation }: ChatHeaderProps) {
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -40,13 +41,10 @@ export function ChatHeader({ conversation, role, onNavigate }: ChatHeaderProps) 
     setShowMenu(false);
   };
 
-  const handleBlockUser = () => {
-    // Not implemented
-    setShowMenu(false);
-  };
-
   const handleDeleteConversation = () => {
-    // Not implemented
+    if (confirm('Are you sure you want to delete this conversation? This cannot be undone.')) {
+      onDeleteConversation();
+    }
     setShowMenu(false);
   };
 
@@ -70,7 +68,6 @@ export function ChatHeader({ conversation, role, onNavigate }: ChatHeaderProps) 
         {showMenu && (
           <div className="conversation-menu">
             <button onClick={handleViewProduct}>View Product</button>
-            <button onClick={handleBlockUser}>Block User</button>
             <button onClick={handleDeleteConversation}>Delete Conversation</button>
           </div>
         )}

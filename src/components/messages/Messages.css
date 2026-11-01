@@ -685,7 +685,7 @@
     margin: var(--composer-margin);
   }
 
-  .message-safety {
+.message-safety {
     display: none;
   }
 }

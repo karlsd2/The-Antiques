@@ -144,6 +144,32 @@ export function Messages({
     }
   };
 
+  const handleDeleteConversation = async () => {
+    if (!activeId || !user?.id) return;
+
+    try {
+      console.log('Deleting conversation:', activeId, 'for user:', user.id);
+      const { error } = await supabase
+        .from('conversations')
+        .delete()
+        .eq('id', activeId);
+
+      if (error) {
+        console.error('Supabase delete error:', error);
+        throw error;
+      }
+
+      // Clear the active conversation
+      setActiveId(undefined);
+
+      // Refetch conversations to update the list
+      refetchConversations();
+    } catch (err) {
+      console.error('Error deleting conversation:', err);
+      alert(`Failed to delete conversation: ${(err as any).message}`);
+    }
+  };
+
   // Format timestamp for display
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -313,6 +339,7 @@ export function Messages({
           onDraftChange={setDraft}
           onSendMessage={sendMessage}
           onNavigate={navigate}
+          onDeleteConversation={handleDeleteConversation}
         />
       </div>
 

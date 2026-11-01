@@ -12,6 +12,7 @@ interface ChatPanelProps {
   onDraftChange: (value: string) => void;
   onSendMessage: (event: React.FormEvent, images: File[]) => void;
   onNavigate: (page: Page, product?: Product) => void;
+  onDeleteConversation: () => void;
 }
 
 export function ChatPanel({
@@ -22,10 +23,16 @@ export function ChatPanel({
   onDraftChange,
   onSendMessage,
   onNavigate,
+  onDeleteConversation,
 }: ChatPanelProps) {
   return (
     <section className="chat-panel">
-      <ChatHeader conversation={conversation} role={role} onNavigate={onNavigate} />
+      <ChatHeader
+        conversation={conversation}
+        role={role}
+        onNavigate={onNavigate}
+        onDeleteConversation={onDeleteConversation}
+      />
 
       <ChatProduct product={conversation.product} onNavigate={onNavigate} />
 
