@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { Badge } from '../../components/Badge';
+import { Pagination } from '../../components/Pagination';
 import { money } from '../../lib/utils';
 import type { Page, Product, Category } from '../../types';
 import { useAuth } from '../../hooks/useAuth';
@@ -20,6 +21,8 @@ export function Products({ navigate, products, loading, error, refetch, onProduc
   const [uploadProgress, setUploadProgress] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'active' | 'draft' | 'sold' | 'all'>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
 
   // Filter products based on search query and status
   const filteredProducts = products.filter((p) => !removed.includes(p.id)).filter((product) => {
@@ -38,6 +41,27 @@ export function Products({ navigate, products, loading, error, refetch, onProduc
       (product.year && product.year.toLowerCase().includes(query))
     );
   });
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
+
+  // Reset to page 1 when search or filter changes
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+  };
+
+  const handleStatusFilterChange = (filter: 'active' | 'draft' | 'sold' | 'all') => {
+    setStatusFilter(filter);
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   const handleDelete = async (productId: string) => {
     try {
@@ -247,19 +271,19 @@ export function Products({ navigate, products, loading, error, refetch, onProduc
       <div className="table-card">
         <div className="table-tools">
           <div className="tab-buttons">
-            <button className={statusFilter === 'all' ? 'active' : ''} onClick={() => setStatusFilter('all')}>All {products.filter(p => !removed.includes(p.id)).length}</button>
-            <button className={statusFilter === 'active' ? 'active' : ''} onClick={() => setStatusFilter('active')}>Active {products.filter(p => p.status === 'active').length}</button>
-            <button className={statusFilter === 'draft' ? 'active' : ''} onClick={() => setStatusFilter('draft')}>Drafts {products.filter(p => p.status === 'draft').length}</button>
-            <button className={statusFilter === 'sold' ? 'active' : ''} onClick={() => setStatusFilter('sold')}>Sold {products.filter(p => p.status === 'sold').length}</button>
+            <button className={statusFilter === 'all' ? 'active' : ''} onClick={() => handleStatusFilterChange('all')}>All {products.filter(p => !removed.includes(p.id)).length}</button>
+            <button className={statusFilter === 'active' ? 'active' : ''} onClick={() => handleStatusFilterChange('active')}>Active {products.filter(p => p.status === 'active').length}</button>
+            <button className={statusFilter === 'draft' ? 'active' : ''} onClick={() => handleStatusFilterChange('draft')}>Drafts {products.filter(p => p.status === 'draft').length}</button>
+            <button className={statusFilter === 'sold' ? 'active' : ''} onClick={() => handleStatusFilterChange('sold')}>Sold {products.filter(p => p.status === 'sold').length}</button>
           </div>
-          <label className="search-field"><Icon name="search" size={17} /><input placeholder="Search inventory" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></label>
+          <label className="search-field"><Icon name="search" size={17} /><input placeholder="Search inventory" value={searchQuery} onChange={(e) => handleSearchChange(e.target.value)} /></label>
         </div>
         <div className="inventory-list">
           {loading ? (
             <p>Loading...</p>
           ) : error ? (
             <p>Error: {error.message}</p>
-          ) : filteredProducts.map((product) => (
+          ) : paginatedProducts.map((product) => (
             <div className="inventory-row" key={product.id}>
               <img src={product.images?.[0] || ''} alt="" />
               <div className="inventory-name">
@@ -278,6 +302,13 @@ export function Products({ navigate, products, loading, error, refetch, onProduc
             </div>
           ))}
         </div>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+          totalItems={filteredProducts.length}
+          itemsPerPage={itemsPerPage}
+        />
       </div>
       {showAdd && (
         <div className="modal-backdrop" onClick={() => setShowAdd(false)}>

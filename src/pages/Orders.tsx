@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Icon } from '../components/Icon';
 import { SkeletonRow } from '../components/Skeleton';
+import { Pagination } from '../components/Pagination';
 import { money } from '../lib/utils';
 import { useAuth } from '../hooks/useAuth';
 import { useOrders } from '../hooks/useOrders';
@@ -14,6 +15,8 @@ export function Orders({ seller = false }: { seller?: boolean }) {
   const [updateLoading, setUpdateLoading] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Filter orders based on search query
   const filteredOrders = orders.filter((order) => {
@@ -26,6 +29,22 @@ export function Orders({ seller = false }: { seller?: boolean }) {
       order.status.toLowerCase().includes(query)
     );
   });
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedOrders = filteredOrders.slice(startIndex, endIndex);
+
+  // Reset to page 1 when search changes
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   const handleUpdateClick = (order: Order) => {
     setUpdatingOrder(order);
@@ -64,7 +83,7 @@ export function Orders({ seller = false }: { seller?: boolean }) {
       <div className="table-card">
         <div className="table-tools">
           <strong>{filteredOrders.length} orders</strong>
-          <label className="search-field"><Icon name="search" size={17} /><input placeholder="Search orders" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></label>
+          <label className="search-field"><Icon name="search" size={17} /><input placeholder="Search orders" value={searchQuery} onChange={(e) => handleSearchChange(e.target.value)} /></label>
         </div>
         <div className="data-table">
           <div className="table-row header">
@@ -82,7 +101,7 @@ export function Orders({ seller = false }: { seller?: boolean }) {
           ) : filteredOrders.length === 0 ? (
             <div className="table-row"><span>{searchQuery ? 'No orders match your search.' : 'No orders yet.'}</span></div>
           ) : (
-            filteredOrders.map((order) => (
+            paginatedOrders.map((order) => (
               <div className="table-row" key={order.id}>
                 <strong>{order.order_number}</strong>
                 <span>{seller && order.buyer_name ? <small>{order.buyer_name} · </small> : ''}{order.items?.[0]?.product_name || 'Order'}</span>
@@ -94,6 +113,13 @@ export function Orders({ seller = false }: { seller?: boolean }) {
             ))
           )}
         </div>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+          totalItems={filteredOrders.length}
+          itemsPerPage={itemsPerPage}
+        />
       </div>
       {updatingOrder && (
         <div className="modal-backdrop" onClick={() => setUpdatingOrder(null)}>
