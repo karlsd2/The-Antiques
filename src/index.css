@@ -100,15 +100,6 @@ header nav > button.active:after, header nav > button:hover:after { right: 0; }
 .product-bottom { display: flex; justify-content: space-between; align-items: center; }
 .product-bottom strong { font-family: "Playfair Display", serif; font-size: 16px; }
 .mini-verified { color: var(--sage); display: flex; gap: 4px; align-items: center; font-size: 13px; text-transform: uppercase; }
-.category-section { background: var(--ink); color: white; }
-.category-section .section-heading span { color: var(--peach); }
-.category-grid { display: grid; grid-template-columns: repeat(4, 1fr); }
-.category-card { min-height: 170px; background: transparent; color: white; border: 0; border-top: 1px solid rgba(255,255,255,.2); text-align: left; padding: 26px 18px; display: grid; grid-template-columns: 1fr auto; align-content: space-between; transition: .2s; }
-.category-card:nth-child(-n+4) { border-top: 0; }
-.category-card:nth-child(4n+2), .category-card:nth-child(4n+3), .category-card:nth-child(4n+4) { border-left: 1px solid rgba(255,255,255,.2); }
-.category-card span { grid-column: 1 / -1; font-size: 13px; text-transform: uppercase; letter-spacing: .1em; color: #ab9d95; }
-.category-card strong { font: 500 20px "Playfair Display", serif; }
-.category-card:hover { background: var(--peach); color: var(--ink); padding-left: 25px; }
 .inner-page { max-width: 1500px; margin: auto; min-height: 65vh; }
 .inner-page.narrow { max-width: 1280px; }
 .page-intro { text-align: center; margin-bottom: 55px; }
