@@ -18,7 +18,7 @@ export function Navbar({
   const [open, setOpen] = useState(false);
   const [showLogoutPopup, setShowLogoutPopup] = useState(false);
   const logoutButtonRef = useRef<HTMLDivElement>(null);
-  const buyerNav: [string, Page][] = [["Home", "home"], ["Shop", "shop"], ["Categories", "shop"], ["Wishlist", "wishlist"], ["Messages", "messages"], ["Orders", "orders"]];
+  const buyerNav: [string, Page][] = [["Home", "home"], ["Shop", "shop"], ["Wishlist", "wishlist"], ["Messages", "messages"], ["Orders", "orders"]];
   const sellerNav: [string, Page][] = [["Dashboard", "dashboard"], ["Products", "products"], ["Messages", "messages"], ["Orders", "seller-orders"], ["Sales", "sales"]];
   const nav = role === "buyer" ? buyerNav : sellerNav;
 
