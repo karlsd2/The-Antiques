@@ -77,9 +77,6 @@ export function Navbar({
               <Icon name="bag" size={21} />{cartCount > 0 && <span>{cartCount}</span>}
             </button>
           )}
-          <button className="icon-button" onClick={() => onNavigate("messages")} aria-label="Messages">
-            <Icon name="message" size={21} />
-          </button>
           <button className="icon-button" onClick={() => onNavigate(role === "buyer" ? "profile" : "seller-profile")} aria-label="Profile"><Icon name="user" size={21} /></button>
           <div className="icon-button-wrapper" ref={logoutButtonRef}>
             <button className="icon-button" onClick={handleLogoutClick} aria-label="Sign out">
