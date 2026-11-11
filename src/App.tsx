@@ -257,7 +257,7 @@ export default function App() {
 
   let content: React.ReactNode;
   if (page === "home") {
-    content = <Home navigate={navigate} favorites={wishlist} toggleFavorite={toggleFavorite} products={products} loading={productsLoading} error={productsError} />;
+    content = <Home navigate={navigate} favorites={wishlist} toggleFavorite={toggleFavorite} products={products} categories={categories} loading={productsLoading || categoriesLoading} error={productsError || categoriesError} />;
   } else if (page === "shop") {
     content = <Shop navigate={navigate} favorites={wishlist} toggleFavorite={toggleFavorite} products={products} categories={categories} loading={productsLoading || categoriesLoading} error={productsError || categoriesError} />;
   } else if (page === "product") {
