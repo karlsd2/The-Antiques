@@ -61,6 +61,11 @@ export function Messages({
       });
       if (error) {
         console.error('Error marking messages as read:', error);
+      } else {
+        const opened = conversations.find((c) => c.id === conversationId);
+        if ((opened?.unread_count || 0) > 0) {
+          refetchConversations();
+        }
       }
     } catch (err) {
       console.error('Error marking messages as read:', err);

@@ -123,6 +123,26 @@ export function useConversations(userId: string | null, role: 'buyer' | 'seller'
 
       if (error) throw error
 
+      // Fetch unread message counts per conversation
+      const conversationIds = (data || []).map((item: any) => item.id)
+      const unreadByConversation: Record<string, number> = {}
+
+      if (conversationIds.length > 0) {
+        const { data: unreadMessages, error: unreadError } = await supabase
+          .from('messages')
+          .select('conversation_id')
+          .in('conversation_id', conversationIds)
+          .is('read_at', null)
+          .neq('sender_id', userId)
+
+        if (unreadError) throw unreadError
+
+        ;(unreadMessages || []).forEach((message: any) => {
+          unreadByConversation[message.conversation_id] =
+            (unreadByConversation[message.conversation_id] || 0) + 1
+        })
+      }
+
       // Transform data to match our Conversation type
       const transformedData: Conversation[] = (data || []).map((item: any) => {
         const product: Product = {
@@ -168,7 +188,7 @@ export function useConversations(userId: string | null, role: 'buyer' | 'seller'
           seller_name: sellerName,
           seller_initials: sellerInitials,
           last_message: lastMessage,
-          unread_count: 0, // Will be calculated separately
+          unread_count: unreadByConversation[item.id] || 0,
         }
       })
 
