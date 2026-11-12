@@ -9,6 +9,7 @@ import type { User } from '@supabase/supabase-js';
 export function ProductDetails({ product, favorite, toggleFavorite, addToCart, navigate, user }: { product: Product; favorite: boolean; toggleFavorite: () => void; addToCart: () => void; navigate: (page: Page, product?: Product, sellerId?: string, conversationId?: string) => void; user: User | null }) {
   const [sellerProfile, setSellerProfile] = useState<Profile | null>(null);
   const [messageLoading, setMessageLoading] = useState(false);
+  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
     if (product.seller_id) {
@@ -100,6 +101,16 @@ export function ProductDetails({ product, favorite, toggleFavorite, addToCart, n
   const displayName = sellerProfile?.store_name || sellerProfile?.full_name || product.seller_name || 'Seller';
   const location = sellerProfile?.location || null;
 
+  const handleAddToCart = () => {
+    if (user) {
+      addToCart();
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 3000);
+    } else {
+      navigate("login");
+    }
+  };
+
   return (
     <main className="inner-page product-detail">
       <button className="back-link" onClick={() => navigate("shop")}>← Back to collection</button>
@@ -141,9 +152,15 @@ export function ProductDetails({ product, favorite, toggleFavorite, addToCart, n
             <div><dt>Availability</dt><dd>Only {product.stock} available</dd></div>
           </dl>
           <div className="purchase-actions">
-            <button className="button primary" onClick={() => user ? addToCart() : navigate("login")}>Add to cart <Icon name="bag" /></button>
+            <button className="button primary" onClick={handleAddToCart}>Add to cart <Icon name="bag" /></button>
             <button className="button outline" onClick={() => user ? (addToCart(), navigate("checkout")) : navigate("login")}>Buy it now</button>
           </div>
+          {showToast && (
+            <div className="toast-success">
+              <Icon name="check" size={18} />
+              <span>Added to cart</span>
+            </div>
+          )}
           <div className="seller-card">
             <div className="avatar">{displayName[0].toUpperCase()}</div>
             <div>
