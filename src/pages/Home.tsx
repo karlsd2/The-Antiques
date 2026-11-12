@@ -4,7 +4,7 @@ import { ProductCard } from '../components/ProductCard';
 import { SkeletonCard, SkeletonCategory } from '../components/Skeleton';
 import type { Page, Product, Category } from '../types';
 
-export function Home({ navigate, favorites, toggleFavorite, products, categories, loading, error }: { navigate: (page: Page, product?: Product, sellerId?: string) => void; favorites: string[]; toggleFavorite: (id: string) => void; products: Product[]; categories: Category[]; loading: boolean; error: Error | null }) {
+export function Home({ navigate, favorites, toggleFavorite, products, categories, loading, error, isGuest }: { navigate: (page: Page, product?: Product, sellerId?: string) => void; favorites: string[]; toggleFavorite: (id: string) => void; products: Product[]; categories: Category[]; loading: boolean; error: Error | null; isGuest: boolean }) {
   if (loading) {
     return (
       <>
@@ -41,7 +41,13 @@ export function Home({ navigate, favorites, toggleFavorite, products, categories
         <SectionTitle eyebrow="Freshly found" title="New arrivals" action="View all pieces" onAction={() => navigate("shop")} />
         <div className="product-grid four">
           {products.slice(0, 4).map((product) => (
-            <ProductCard key={product.id} product={product} onOpen={() => navigate("product", product)} favorite={favorites.includes(product.id)} onFavorite={() => toggleFavorite(product.id)} />
+            <ProductCard
+              key={product.id}
+              product={product}
+              onOpen={() => navigate("product", product)}
+              favorite={favorites.includes(product.id)}
+              onFavorite={() => isGuest ? navigate("login") : toggleFavorite(product.id)}
+            />
           ))}
         </div>
       </section>

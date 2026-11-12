@@ -8,19 +8,22 @@ export function Navbar({
   cartCount,
   onNavigate,
   onLogout,
+  isGuest,
 }: {
   role: Role;
   page: Page;
   cartCount: number;
   onNavigate: (page: Page) => void;
   onLogout: () => void;
+  isGuest: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [showLogoutPopup, setShowLogoutPopup] = useState(false);
   const logoutButtonRef = useRef<HTMLDivElement>(null);
   const buyerNav: [string, Page][] = [["Home", "home"], ["Shop", "shop"], ["Wishlist", "wishlist"], ["Messages", "messages"], ["Orders", "orders"]];
   const sellerNav: [string, Page][] = [["Dashboard", "dashboard"], ["Products", "products"], ["Messages", "messages"], ["Orders", "seller-orders"], ["Sales", "sales"]];
-  const nav = role === "buyer" ? buyerNav : sellerNav;
+  const guestNav: [string, Page][] = [["Shop", "shop"]];
+  const nav = isGuest ? guestNav : (role === "buyer" ? buyerNav : sellerNav);
 
   // Close popup when clicking outside
   useEffect(() => {
@@ -55,7 +58,7 @@ export function Navbar({
   return (
     <>
       <header>
-        <button className="brand" onClick={() => onNavigate(role === "buyer" ? "home" : "dashboard")}>
+        <button className="brand" onClick={() => onNavigate(isGuest ? "landing" : (role === "buyer" ? "home" : "dashboard"))}>
           <span className="brand-mark">A</span>
           <span>The Antiques</span>
         </button>
@@ -63,35 +66,47 @@ export function Navbar({
           {nav.map(([label, destination]) => (
             <button key={label} className={page === destination ? "active" : ""} onClick={() => { onNavigate(destination); setOpen(false); }}>{label}</button>
           ))}
-          <div className="mobile-logout">
-            <button onClick={() => {
-              if (window.confirm('Are you sure you want to sign out?')) {
-                onLogout();
-              }
-            }}>Sign out</button>
-          </div>
+          {isGuest ? (
+            <div className="mobile-logout">
+              <button onClick={() => { onNavigate("login"); setOpen(false); }}>Sign in</button>
+            </div>
+          ) : (
+            <div className="mobile-logout">
+              <button onClick={() => {
+                if (window.confirm('Are you sure you want to sign out?')) {
+                  onLogout();
+                }
+              }}>Sign out</button>
+            </div>
+          )}
         </nav>
         <div className="header-actions">
-          {role === "buyer" && (
-            <button className="icon-button" onClick={() => onNavigate("cart")} aria-label="Cart">
-              <Icon name="bag" size={21} />{cartCount > 0 && <span>{cartCount}</span>}
-            </button>
-          )}
-          <button className="icon-button" onClick={() => onNavigate(role === "buyer" ? "profile" : "seller-profile")} aria-label="Profile"><Icon name="user" size={21} /></button>
-          <div className="icon-button-wrapper" ref={logoutButtonRef}>
-            <button className="icon-button" onClick={handleLogoutClick} aria-label="Sign out">
-              <Icon name="signout" size={18} />
-            </button>
-            {showLogoutPopup && (
-              <div className="logout-popup">
-                <p>Are you sure you want to sign out?</p>
-                <div className="logout-popup-actions">
-                  <button className="button outline" onClick={handleCancelLogout}>Cancel</button>
-                  <button className="button primary" onClick={handleConfirmLogout}>Sign Out</button>
-                </div>
+          {isGuest ? (
+            <button className="button primary" onClick={() => onNavigate("login")}>Sign in</button>
+          ) : (
+            <>
+              {role === "buyer" && (
+                <button className="icon-button" onClick={() => onNavigate("cart")} aria-label="Cart">
+                  <Icon name="bag" size={21} />{cartCount > 0 && <span>{cartCount}</span>}
+                </button>
+              )}
+              <button className="icon-button" onClick={() => onNavigate(role === "buyer" ? "profile" : "seller-profile")} aria-label="Profile"><Icon name="user" size={21} /></button>
+              <div className="icon-button-wrapper" ref={logoutButtonRef}>
+                <button className="icon-button" onClick={handleLogoutClick} aria-label="Sign out">
+                  <Icon name="signout" size={18} />
+                </button>
+                {showLogoutPopup && (
+                  <div className="logout-popup">
+                    <p>Are you sure you want to sign out?</p>
+                    <div className="logout-popup-actions">
+                      <button className="button outline" onClick={handleCancelLogout}>Cancel</button>
+                      <button className="button primary" onClick={handleConfirmLogout}>Sign Out</button>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </>
+          )}
           <button className="menu-button" onClick={() => setOpen(!open)} aria-label="Menu"><Icon name={open ? "close" : "menu"} size={23} /></button>
         </div>
       </header>

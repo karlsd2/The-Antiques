@@ -9,6 +9,7 @@ import type { Page, Role } from "./types";
 import type { Product } from "./types";
 
 // Page imports
+import { Landing } from "./pages/Landing";
 import { Home } from "./pages/Home";
 import { Shop } from "./pages/Shop";
 import { ProductDetails } from "./pages/ProductDetails";
@@ -28,25 +29,34 @@ import { SellerProfile } from "./pages/seller/SellerProfile";
 import { SellerShop } from "./pages/SellerShop";
 
 // Page sets for role-based access control (defined outside component to avoid recreation)
+const publicPages: Set<Page> = new Set(["landing", "shop", "product", "login", "register", "forgot"]);
 const buyerPages: Set<Page> = new Set(["home", "shop", "product", "wishlist", "cart", "checkout", "confirmation", "orders", "profile", "messages", "seller-shop"]);
 const sellerPages: Set<Page> = new Set(["dashboard", "products", "messages", "seller-orders", "sales", "seller-profile"]);
 const authPages: Set<Page> = new Set(["login", "register", "forgot"]);
 
 export default function App() {
   const { user, profile, loading: authLoading, signOut, updateProfile } = useAuth();
-  const [page, setPage] = useState<Page>("login");
+  const [page, setPage] = useState<Page>("landing");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedSellerId, setSelectedSellerId] = useState<string | null>(null);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [lastOrder, setLastOrder] = useState<{ id: string; order_number: string } | null>(null);
   const [orderProcessing, setOrderProcessing] = useState(false);
 
-  // Navigate to appropriate page after auth loads (only if on auth pages)
+  // Navigate to appropriate page after auth loads
   useEffect(() => {
-    if (!authLoading && user && profile) {
-      if (page === "login" || page === "register" || page === "forgot") {
-        const initialPage = profile.role === 'seller' ? 'dashboard' : 'home';
-        setPage(initialPage);
+    if (!authLoading) {
+      if (user && profile) {
+        // Authenticated user: if on auth/landing pages, redirect to role-appropriate home
+        if (page === "login" || page === "register" || page === "forgot" || page === "landing") {
+          const initialPage = profile.role === 'seller' ? 'dashboard' : 'home';
+          setPage(initialPage);
+        }
+      } else {
+        // Guest: if on protected pages, redirect to landing
+        if (!publicPages.has(page)) {
+          setPage("landing");
+        }
       }
     }
   }, [authLoading, user, profile, page]);
@@ -70,8 +80,15 @@ export default function App() {
   const role = profile?.role || "buyer";
 
   const navigate = (destination: Page, product?: Product, sellerId?: string, conversationId?: string) => {
+    // Guest protection: redirect to login when trying to access authenticated-only pages
+    if (!user && !publicPages.has(destination)) {
+      setPage("login");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
     // Role protection: check if the destination is accessible to the current role
-    if (!authPages.has(destination)) {
+    if (!authPages.has(destination) && user) {
       if (role === "buyer" && !buyerPages.has(destination)) {
         // Buyer trying to access seller page - redirect to buyer home
         setPage("home");
@@ -230,6 +247,7 @@ export default function App() {
   };
 
   const authPage = page === "login" || page === "register" || page === "forgot";
+  const isGuest = !user;
 
   if (authLoading) {
     return <div className="loading" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '1.5rem' }}>Loading...</div>;
@@ -256,10 +274,12 @@ export default function App() {
   }));
 
   let content: React.ReactNode;
-  if (page === "home") {
-    content = <Home navigate={navigate} favorites={wishlist} toggleFavorite={toggleFavorite} products={products} categories={categories} loading={productsLoading || categoriesLoading} error={productsError || categoriesError} />;
+  if (page === "landing") {
+    content = <Landing navigate={navigate} products={products} categories={categories} loading={productsLoading || categoriesLoading} error={productsError || categoriesError} />;
+  } else if (page === "home") {
+    content = <Home navigate={navigate} favorites={wishlist} toggleFavorite={toggleFavorite} products={products} categories={categories} loading={productsLoading || categoriesLoading} error={productsError || categoriesError} isGuest={isGuest} />;
   } else if (page === "shop") {
-    content = <Shop navigate={navigate} favorites={wishlist} toggleFavorite={toggleFavorite} products={products} categories={categories} loading={productsLoading || categoriesLoading} error={productsError || categoriesError} />;
+    content = <Shop navigate={navigate} favorites={wishlist} toggleFavorite={toggleFavorite} products={products} categories={categories} loading={productsLoading || categoriesLoading} error={productsError || categoriesError} isGuest={isGuest} />;
   } else if (page === "product") {
     content = selectedProduct ? <ProductDetails product={selectedProduct} favorite={wishlist.includes(selectedProduct.id)} toggleFavorite={() => toggleFavorite(selectedProduct.id)} addToCart={() => addToCart(selectedProduct)} navigate={navigate} user={user} /> : null;
   } else if (page === "wishlist") {
@@ -300,7 +320,7 @@ export default function App() {
 
   return (
     <div className="app">
-      {!authPage && <Navbar role={role} page={page} cartCount={cartCount} onNavigate={navigate} onLogout={handleLogout} />}
+      {!authPage && <Navbar role={role} page={page} cartCount={cartCount} onNavigate={navigate} onLogout={handleLogout} isGuest={isGuest} />}
       {content}
     </div>
   );

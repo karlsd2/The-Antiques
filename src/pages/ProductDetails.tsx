@@ -118,7 +118,7 @@ export function ProductDetails({ product, favorite, toggleFavorite, addToCart, n
         <div className="detail-copy">
           <div className="detail-topline">
             <span>{product.category_name || 'Uncategorized'} · {product.year || 'Unknown'}</span>
-            <button onClick={toggleFavorite}><Icon name="heart" filled={favorite} /> {favorite ? "Saved" : "Save"}</button>
+            <button onClick={() => user ? toggleFavorite() : navigate("login")}><Icon name="heart" filled={favorite} /> {favorite ? "Saved" : "Save"}</button>
           </div>
           <h1>{product.name}</h1>
           <div className="detail-price">{money(product.price)}</div>
@@ -141,8 +141,8 @@ export function ProductDetails({ product, favorite, toggleFavorite, addToCart, n
             <div><dt>Availability</dt><dd>Only {product.stock} available</dd></div>
           </dl>
           <div className="purchase-actions">
-            <button className="button primary" onClick={addToCart}>Add to cart <Icon name="bag" /></button>
-            <button className="button outline" onClick={() => { addToCart(); navigate("checkout"); }}>Buy it now</button>
+            <button className="button primary" onClick={() => user ? addToCart() : navigate("login")}>Add to cart <Icon name="bag" /></button>
+            <button className="button outline" onClick={() => user ? (addToCart(), navigate("checkout")) : navigate("login")}>Buy it now</button>
           </div>
           <div className="seller-card">
             <div className="avatar">{displayName[0].toUpperCase()}</div>

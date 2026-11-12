@@ -8,6 +8,7 @@ export type { UserRole, Profile } from '../hooks/useAuth';
 export type Role = "buyer" | "seller";
 
 export type Page =
+  | "landing"
   | "home"
   | "shop"
   | "product"

@@ -4,7 +4,7 @@ import { ProductCard } from '../components/ProductCard';
 import { SkeletonCard } from '../components/Skeleton';
 import type { Page, Product, Category } from '../types';
 
-export function Shop({ navigate, favorites, toggleFavorite, products, categories, loading, error }: { navigate: (page: Page, product?: Product, sellerId?: string) => void; favorites: string[]; toggleFavorite: (id: string) => void; products: Product[]; categories: Category[]; loading: boolean; error: Error | null }) {
+export function Shop({ navigate, favorites, toggleFavorite, products, categories, loading, error, isGuest }: { navigate: (page: Page, product?: Product, sellerId?: string) => void; favorites: string[]; toggleFavorite: (id: string) => void; products: Product[]; categories: Category[]; loading: boolean; error: Error | null; isGuest: boolean }) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All categories");
   const [condition, setCondition] = useState("All conditions");
@@ -74,7 +74,15 @@ export function Shop({ navigate, favorites, toggleFavorite, products, categories
       </div>
       <div className="results-line"><span>{filtered.length} exceptional pieces</span><span>Every item ships insured</span></div>
       <div className="product-grid four">
-        {filtered.map((product) => <ProductCard key={product.id} product={product} onOpen={() => navigate("product", product)} favorite={favorites.includes(product.id)} onFavorite={() => toggleFavorite(product.id)} />)}
+        {filtered.map((product) => (
+          <ProductCard
+            key={product.id}
+            product={product}
+            onOpen={() => navigate("product", product)}
+            favorite={favorites.includes(product.id)}
+            onFavorite={() => isGuest ? navigate("login") : toggleFavorite(product.id)}
+          />
+        ))}
       </div>
     </main>
   );

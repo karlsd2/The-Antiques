@@ -40,7 +40,7 @@ export function Auth({ mode, navigate, onLogin }: { mode: "login" | "register" |
     <main className="auth-page centered">
       <div className="auth-form-wrap">
         <div className="auth-form-container">
-          <button className="auth-brand" onClick={() => navigate("login")}>The Antiques</button>
+          <button className="auth-brand" onClick={() => navigate("landing")}>The Antiques</button>
           <div className="auth-form">
             <span className="eyebrow">{mode === "login" ? "Member access" : mode === "register" ? "Create an account" : "Password recovery"}</span>
             <h1>{copy[0]}</h1>
@@ -66,6 +66,7 @@ export function Auth({ mode, navigate, onLogin }: { mode: "login" | "register" |
               <button type="submit" className="button primary wide-button" disabled={loading}>{loading ? 'Processing...' : (mode === "login" ? "Sign in" : mode === "register" ? "Create account" : "Send reset link")} <Icon name="arrow" /></button>
             </form>
             <p className="auth-switch">{mode === "login" ? "New to The Antiques?" : "Already have an account?"} <button onClick={() => navigate(mode === "login" ? "register" : "login")}>{mode === "login" ? "Create account" : "Sign in"}</button></p>
+            <button className="back-link" onClick={() => navigate("landing")}>← Back to landing page</button>
           </div>
         </div>
       </div>
