@@ -100,8 +100,13 @@ export function ProductDetails({ product, favorite, toggleFavorite, addToCart, n
 
   const displayName = sellerProfile?.store_name || sellerProfile?.full_name || product.seller_name || 'Seller';
   const location = sellerProfile?.location || null;
+  const isOutOfStock = product.stock === 0;
 
   const handleAddToCart = () => {
+    if (isOutOfStock) {
+      alert('This item is out of stock');
+      return;
+    }
     if (user) {
       addToCart();
       setShowToast(true);
@@ -112,6 +117,10 @@ export function ProductDetails({ product, favorite, toggleFavorite, addToCart, n
   };
 
   const handleBuyNow = () => {
+    if (isOutOfStock) {
+      alert('This item is out of stock');
+      return;
+    }
     if (user) {
       setBuyNowProduct(product);
       navigate("checkout");
@@ -158,11 +167,15 @@ export function ProductDetails({ product, favorite, toggleFavorite, addToCart, n
             <div><dt>Era / year</dt><dd>{product.year || 'Unknown'}</dd></div>
             <div><dt>Category</dt><dd>{product.category_name || 'Uncategorized'}</dd></div>
             <div><dt>Ships from</dt><dd>{location || 'Philippines'}</dd></div>
-            <div><dt>Availability</dt><dd>Only {product.stock} available</dd></div>
+            <div><dt>Availability</dt><dd>{isOutOfStock ? 'Out of stock' : `Only ${product.stock} available`}</dd></div>
           </dl>
           <div className="purchase-actions">
-            <button className="button primary" onClick={handleAddToCart}>Add to cart <Icon name="bag" /></button>
-            <button className="button outline" onClick={handleBuyNow}>Buy it now</button>
+            <button className="button primary" onClick={handleAddToCart}>
+              {isOutOfStock ? 'Out of stock' : 'Add to cart'} <Icon name="bag" />
+            </button>
+            <button className="button outline" onClick={handleBuyNow}>
+              {isOutOfStock ? 'Out of stock' : 'Buy it now'}
+            </button>
           </div>
           {showToast && (
             <div className="toast-success">

@@ -86,8 +86,10 @@ header nav > button.active:after, header nav > button:hover:after { right: 0; }
 .button { min-height: 49px; padding: 0 22px; border-radius: 3px; display: inline-flex; justify-content: center; align-items: center; gap: 14px; border: 1px solid transparent; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em; }
 .button.primary { background: var(--ink); color: #fff; }
 .button.primary:hover { background: #40332e; transform: translateY(-1px); }
+.button.primary:disabled { background: var(--line); color: var(--ink-soft); cursor: not-allowed; }
 .button.ghost { background: transparent; border-bottom: 1px solid var(--ink); border-radius: 0; padding-inline: 6px; }
 .button.outline { border-color: var(--ink); background: transparent; }
+.button.outline:disabled { border-color: var(--line); color: var(--ink-soft); cursor: not-allowed; }
 .page-section, .category-section, .inner-page { padding: clamp(70px, 8vw, 118px) clamp(24px, 6vw, 88px); }
 .section-heading { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 38px; }
 .section-heading span { margin: 0 0 10px; }
