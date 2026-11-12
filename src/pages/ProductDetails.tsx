@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase';
 import type { Page, Product, Profile } from '../types';
 import type { User } from '@supabase/supabase-js';
 
-export function ProductDetails({ product, favorite, toggleFavorite, addToCart, navigate, user }: { product: Product; favorite: boolean; toggleFavorite: () => void; addToCart: () => void; navigate: (page: Page, product?: Product, sellerId?: string, conversationId?: string) => void; user: User | null }) {
+export function ProductDetails({ product, favorite, toggleFavorite, addToCart, navigate, user, setBuyNowProduct }: { product: Product; favorite: boolean; toggleFavorite: () => void; addToCart: () => void; navigate: (page: Page, product?: Product, sellerId?: string, conversationId?: string) => void; user: User | null; setBuyNowProduct: (product: Product | null) => void }) {
   const [sellerProfile, setSellerProfile] = useState<Profile | null>(null);
   const [messageLoading, setMessageLoading] = useState(false);
   const [showToast, setShowToast] = useState(false);
@@ -111,6 +111,15 @@ export function ProductDetails({ product, favorite, toggleFavorite, addToCart, n
     }
   };
 
+  const handleBuyNow = () => {
+    if (user) {
+      setBuyNowProduct(product);
+      navigate("checkout");
+    } else {
+      navigate("login");
+    }
+  };
+
   return (
     <main className="inner-page product-detail">
       <button className="back-link" onClick={() => navigate("shop")}>← Back to collection</button>
@@ -153,7 +162,7 @@ export function ProductDetails({ product, favorite, toggleFavorite, addToCart, n
           </dl>
           <div className="purchase-actions">
             <button className="button primary" onClick={handleAddToCart}>Add to cart <Icon name="bag" /></button>
-            <button className="button outline" onClick={() => user ? (addToCart(), navigate("checkout")) : navigate("login")}>Buy it now</button>
+            <button className="button outline" onClick={handleBuyNow}>Buy it now</button>
           </div>
           {showToast && (
             <div className="toast-success">

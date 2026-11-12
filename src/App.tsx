@@ -42,6 +42,7 @@ export default function App() {
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [lastOrder, setLastOrder] = useState<{ id: string; order_number: string } | null>(null);
   const [orderProcessing, setOrderProcessing] = useState(false);
+  const [buyNowProduct, setBuyNowProduct] = useState<Product | null>(null);
 
   // Navigate to appropriate page after auth loads
   useEffect(() => {
@@ -177,17 +178,29 @@ export default function App() {
     try {
       setOrderProcessing(true);
 
-      // Get cart items with full product data
-      const cartItemsWithProducts = cart.map(item => ({
-        product_id: item.product_id,
-        product_name: item.products?.name || '',
-        product_condition: item.products?.condition || null,
-        price: item.products?.price || 0,
-        quantity: item.quantity,
-      }));
+      // Handle buy now (single product) vs regular cart checkout
+      let cartItemsWithProducts;
+      if (buyNowProduct) {
+        cartItemsWithProducts = [{
+          product_id: buyNowProduct.id,
+          product_name: buyNowProduct.name,
+          product_condition: buyNowProduct.condition,
+          price: buyNowProduct.price,
+          quantity: 1,
+        }];
+      } else {
+        // Get cart items with full product data
+        cartItemsWithProducts = cart.map(item => ({
+          product_id: item.product_id,
+          product_name: item.products?.name || '',
+          product_condition: item.products?.condition || null,
+          price: item.products?.price || 0,
+          quantity: item.quantity,
+        }));
 
-      if (cartItemsWithProducts.length === 0) {
-        throw new Error('Your cart is empty');
+        if (cartItemsWithProducts.length === 0) {
+          throw new Error('Your cart is empty');
+        }
       }
 
       // Calculate totals from verified prices
@@ -232,8 +245,13 @@ export default function App() {
       // Store order for confirmation page
       setLastOrder({ id: order.id, order_number: order.order_number });
 
-      // Clear cart after successful order
-      await clearCart();
+      // Clear cart after successful order (only for regular cart checkout)
+      if (!buyNowProduct) {
+        await clearCart();
+      }
+
+      // Clear buyNowProduct after successful order
+      setBuyNowProduct(null);
 
       // Navigate to confirmation
       setPage("confirmation");
@@ -281,13 +299,15 @@ export default function App() {
   } else if (page === "shop") {
     content = <Shop navigate={navigate} favorites={wishlist} toggleFavorite={toggleFavorite} products={products} categories={categories} loading={productsLoading || categoriesLoading} error={productsError || categoriesError} isGuest={isGuest} />;
   } else if (page === "product") {
-    content = selectedProduct ? <ProductDetails product={selectedProduct} favorite={wishlist.includes(selectedProduct.id)} toggleFavorite={() => toggleFavorite(selectedProduct.id)} addToCart={() => addToCart(selectedProduct)} navigate={navigate} user={user} /> : null;
+    content = selectedProduct ? <ProductDetails product={selectedProduct} favorite={wishlist.includes(selectedProduct.id)} toggleFavorite={() => toggleFavorite(selectedProduct.id)} addToCart={() => addToCart(selectedProduct)} navigate={navigate} user={user} setBuyNowProduct={setBuyNowProduct} /> : null;
   } else if (page === "wishlist") {
     content = <Wishlist navigate={navigate} favorites={wishlist} toggleFavorite={toggleFavorite} products={products} loading={wishlistLoading} error={wishlistError} />;
   } else if (page === "cart") {
     content = <Cart items={cartProducts} cartItems={cart} remove={removeFromCart} updateQuantity={handleUpdateQuantity} navigate={navigate} loading={cartLoading} error={cartError} totalCount={totalCount} />;
   } else if (page === "checkout") {
-    if (cartProducts.length === 0) {
+    if (buyNowProduct) {
+      content = <Checkout items={[buyNowProduct]} cartItems={[]} navigate={navigate} onSubmitOrder={handleCreateOrder} isProcessing={orderProcessing} buyNowProduct={buyNowProduct} setBuyNowProduct={setBuyNowProduct} />;
+    } else if (cartProducts.length === 0) {
       setPage("cart");
       window.scrollTo({ top: 0, behavior: "smooth" });
       content = null;

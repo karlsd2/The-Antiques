@@ -34,13 +34,24 @@ const NAGA_CITY_BARANGAYS = [
   'Triangulo',
 ];
 
-export function Checkout({ items, cartItems, navigate, onSubmitOrder, isProcessing }: { items: Product[]; cartItems: CartItem[]; navigate: (page: Page) => void; onSubmitOrder: (formData: FormData) => Promise<void>; isProcessing: boolean }) {
+export function Checkout({ items, cartItems, navigate, onSubmitOrder, isProcessing, buyNowProduct, setBuyNowProduct }: { items: Product[]; cartItems: CartItem[]; navigate: (page: Page) => void; onSubmitOrder: (formData: FormData) => Promise<void>; isProcessing: boolean; buyNowProduct?: Product | null; setBuyNowProduct?: (product: Product | null) => void }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  // Calculate quantities from cartItems
+  // Clear buyNowProduct when navigating away
+  const handleNavigate = (page: Page) => {
+    if (setBuyNowProduct) {
+      setBuyNowProduct(null);
+    }
+    navigate(page);
+  };
+
+  // Calculate quantities from cartItems or buyNowProduct
   const itemsWithQuantities = items.map(item => {
+    if (buyNowProduct) {
+      return { ...item, quantity: 1 };
+    }
     const cartItem = cartItems.find(ci => ci.product_id === item.id);
     return {
       ...item,
@@ -143,6 +154,10 @@ export function Checkout({ items, cartItems, navigate, onSubmitOrder, isProcessi
 
       // Call the order creation handler passed from App.tsx
       await onSubmitOrder(formData);
+      // Clear buyNowProduct after successful order
+      if (setBuyNowProduct) {
+        setBuyNowProduct(null);
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to place order. Please try again.');
     } finally {
@@ -153,7 +168,7 @@ export function Checkout({ items, cartItems, navigate, onSubmitOrder, isProcessi
   return (
     <main className="checkout-page">
       <div className="checkout-form">
-        <button className="back-link" onClick={() => navigate("cart")}>← Return to cart</button>
+        <button className="back-link" onClick={() => handleNavigate(buyNowProduct ? "shop" : "cart")}>← {buyNowProduct ? "Return to shop" : "Return to cart"}</button>
         <span className="eyebrow">Secure checkout</span>
         <h1>Where should we<br /><em>send your find?</em></h1>
         {error && <div style={{ color: '#dc2626', marginBottom: '1rem', padding: '0.75rem', backgroundColor: '#fef2f2', borderRadius: '4px' }}>{error}</div>}
