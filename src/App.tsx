@@ -27,11 +27,12 @@ import { SellerOrders } from "./pages/seller/SellerOrders";
 import { Sales } from "./pages/seller/Sales";
 import { SellerProfile } from "./pages/seller/SellerProfile";
 import { SellerShop } from "./pages/SellerShop";
+import { Wallet } from "./pages/seller/Wallet";
 
 // Page sets for role-based access control (defined outside component to avoid recreation)
 const publicPages: Set<Page> = new Set(["landing", "shop", "product", "login", "register", "forgot"]);
 const buyerPages: Set<Page> = new Set(["home", "shop", "product", "wishlist", "cart", "checkout", "confirmation", "orders", "profile", "messages", "seller-shop"]);
-const sellerPages: Set<Page> = new Set(["dashboard", "products", "messages", "seller-orders", "sales", "seller-profile"]);
+const sellerPages: Set<Page> = new Set(["dashboard", "products", "messages", "seller-orders", "sales", "seller-profile", "wallet"]);
 const authPages: Set<Page> = new Set(["login", "register", "forgot"]);
 
 export default function App() {
@@ -336,6 +337,8 @@ export default function App() {
     content = <SellerProfile navigate={navigate} onLogout={handleLogout} profile={profile} updateProfile={updateProfile} user={user} />;
   } else if (page === "seller-shop") {
     content = selectedSellerId ? <SellerShop navigate={navigate} sellerId={selectedSellerId} favorites={wishlist} toggleFavorite={toggleFavorite} /> : null;
+  } else if (page === "wallet") {
+    content = <Wallet />;
   } else {
     content = <Auth mode={page as "login" | "register" | "forgot"} navigate={navigate} onLogin={handleLogin} />;
   }

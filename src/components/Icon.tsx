@@ -23,6 +23,9 @@ const iconPaths: Record<string, React.ReactNode> = {
   send: <><path d="m22 2-7 20-4-9-9-4Z" /><path d="M22 2 11 13" /></>,
   more: <><circle cx="12" cy="12" r="1" /><circle cx="12" cy="5" r="1" /><circle cx="12" cy="19" r="1" /></>,
   smartphone: <><rect x="5" y="2" width="14" height="20" rx="2" ry="2" /><path d="M12 18h.01" /></>,
+  wallet: <><path d="M4 6h14a2 2 0 0 1 2 2v11H4a2 2 0 0 1-2-2V6a3 3 0 0 1 3-3h12" /><path d="M15 11h7v5h-7a2.5 2.5 0 0 1 0-5Z" /></>,
+  bank: <path d="m3 10 9-6 9 6M5 10v8m5-8v8m4-8v8m5-8v8M3 21h18" />,
+  download: <><path d="M12 3v12m-5-5 5 5 5-5" /><path d="M4 21h16" /></>,
 };
 
 export function Icon({ name, size = 20, filled = false }: { name: string; size?: number; filled?: boolean }) {

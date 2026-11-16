@@ -25,6 +25,7 @@ export type Page =
   | "sales"
   | "seller-profile"
   | "seller-shop"
+  | "wallet"
   | "login"
   | "register"
   | "forgot";
