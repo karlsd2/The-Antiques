@@ -3,13 +3,18 @@
 -- in a single transaction to prevent race conditions
 -- Run this in the Supabase SQL Editor
 
+-- Drop existing function if it exists (in case of migration reruns)
+DROP FUNCTION IF EXISTS public.create_order_with_stock;
+
 CREATE OR REPLACE FUNCTION create_order_with_stock(
   p_buyer_id UUID,
   p_order_number TEXT,
   p_total NUMERIC,
   p_shipping_cost NUMERIC,
   p_shipping_address JSONB,
-  p_items JSONB
+  p_items JSONB,
+  p_payment_method TEXT DEFAULT 'COD',
+  p_gcash_reference_number TEXT DEFAULT NULL
 )
 RETURNS orders
 LANGUAGE plpgsql
@@ -80,8 +85,8 @@ BEGIN
   END IF;
 
   -- Create order
-  INSERT INTO orders (order_number, buyer_id, total, shipping_cost, status, shipping_address)
-  VALUES (p_order_number, p_buyer_id, p_total, p_shipping_cost, 'Confirmed', p_shipping_address)
+  INSERT INTO orders (order_number, buyer_id, total, shipping_cost, status, shipping_address, payment_method, gcash_reference_number, payment_status)
+  VALUES (p_order_number, p_buyer_id, p_total, p_shipping_cost, 'Confirmed', p_shipping_address, p_payment_method, p_gcash_reference_number, 'unpaid')
   RETURNING * INTO v_order;
 
   -- Process each item atomically

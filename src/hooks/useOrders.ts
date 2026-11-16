@@ -9,6 +9,9 @@ export interface Order {
   shipping_cost: number
   status: 'Confirmed' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled'
   shipping_address: any
+  payment_method: string
+  gcash_reference_number: string | null
+  payment_status: 'unpaid' | 'pending' | 'paid' | 'failed'
   created_at: string
   updated_at: string
   items?: OrderItem[]
@@ -136,7 +139,9 @@ export function useOrders(userId: string | null, isSeller: boolean = false) {
     items: Array<{ product_id: string; product_name: string; product_condition: string | null; price: number; quantity: number }>,
     shippingAddress: any,
     total: number,
-    shippingCost: number
+    shippingCost: number,
+    paymentMethod: string = 'COD',
+    gcashReferenceNumber: string | null = null
   ) {
     // Generate order number
     const orderNumber = `TA-${Date.now().toString().slice(-6)}`
@@ -149,6 +154,8 @@ export function useOrders(userId: string | null, isSeller: boolean = false) {
       p_shipping_cost: shippingCost,
       p_shipping_address: shippingAddress,
       p_items: items,
+      p_payment_method: paymentMethod,
+      p_gcash_reference_number: gcashReferenceNumber,
     })
 
     if (rpcError) {

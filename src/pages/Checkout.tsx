@@ -38,6 +38,8 @@ export function Checkout({ items, cartItems, navigate, onSubmitOrder, isProcessi
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [paymentMethod, setPaymentMethod] = useState<'COD' | 'GCash'>('COD');
+  const [gcashReferenceNumber, setGcashReferenceNumber] = useState('');
 
   // Clear buyNowProduct when navigating away
   const handleNavigate = (page: Page) => {
@@ -153,7 +155,7 @@ export function Checkout({ items, cartItems, navigate, onSubmitOrder, isProcessi
       formData.set('postalCode', postalCode);
 
       // Call the order creation handler passed from App.tsx
-      await onSubmitOrder(formData);
+      await onSubmitOrder(formData, paymentMethod, gcashReferenceNumber);
       // Clear buyNowProduct after successful order
       if (setBuyNowProduct) {
         setBuyNowProduct(null);
@@ -240,12 +242,73 @@ export function Checkout({ items, cartItems, navigate, onSubmitOrder, isProcessi
               {fieldErrors.postalCode && <span style={{ color: '#dc2626', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>{fieldErrors.postalCode}</span>}
             </label>
           </div>
-          <h3>Payment</h3>
-          <div className="payment-info" style={{ padding: '1rem', backgroundColor: '#f3f4f6', borderRadius: '4px', marginBottom: '1rem' }}>
-            <p style={{ margin: '0', fontSize: '0.9rem', color: '#666' }}>
-              <Icon name="info" /> <strong>Demo Mode:</strong> No payment gateway is connected yet. Your order will be created as unpaid for demonstration purposes.
-            </p>
+          <h3>Payment method</h3>
+          <div className="payment-methods">
+            <label className={`payment-option ${paymentMethod === 'COD' ? 'active' : ''}`}>
+              <input
+                type="radio"
+                name="paymentMethod"
+                value="COD"
+                checked={paymentMethod === 'COD'}
+                onChange={() => setPaymentMethod('COD')}
+              />
+              <span className="payment-option-content">
+                <strong>Cash on Delivery</strong>
+                <small>Pay when your order arrives</small>
+              </span>
+            </label>
+            <label className={`payment-option ${paymentMethod === 'GCash' ? 'active' : ''}`}>
+              <input
+                type="radio"
+                name="paymentMethod"
+                value="GCash"
+                checked={paymentMethod === 'GCash'}
+                onChange={() => setPaymentMethod('GCash')}
+              />
+              <span className="payment-option-content">
+                <div className="gcash-option">
+                  <strong>GCash</strong>
+                  <small>Pay via GCash e-wallet</small>
+                </div>
+              </span>
+            </label>
           </div>
+          {paymentMethod === 'GCash' && (
+            <div className="gcash-payment-box">
+              <div className="gcash-header">
+                <strong>GCash Payment</strong>
+                <span className="demo-badge">DEMO ONLY</span>
+              </div>
+              <div className="gcash-qr-placeholder">
+                <Icon name="smartphone" size={48} />
+                <div className="qr-label">
+                  <strong>DEMO ONLY</strong>
+                  <small>NOT A REAL PAYMENT QR CODE</small>
+                </div>
+              </div>
+              <div className="gcash-instructions">
+                <h4>Payment Instructions:</h4>
+                <ol>
+                  <li>Open your GCash app</li>
+                  <li>Scan the QR code (demo placeholder)</li>
+                  <li>Enter the amount: <strong>{money(total)}</strong></li>
+                  <li>Complete the payment</li>
+                  <li>Enter the reference number below (optional for demo)</li>
+                </ol>
+              </div>
+              <label className="wide">
+                GCash Reference Number (Optional for demo)
+                <input
+                  type="text"
+                  value={gcashReferenceNumber}
+                  onChange={(e) => setGcashReferenceNumber(e.target.value)}
+                  placeholder="Enter reference number from GCash"
+                  maxLength={16}
+                />
+                <small>This is for demonstration purposes only. Do not use real payment references.</small>
+              </label>
+            </div>
+          )}
           <button className="button primary wide-button" type="submit" disabled={loading || isProcessing}>{loading || isProcessing ? 'Processing...' : `Place order · ${money(total)}`} <Icon name="arrow" /></button>
         </form>
       </div>

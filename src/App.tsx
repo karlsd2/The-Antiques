@@ -169,7 +169,7 @@ export default function App() {
     }
   };
 
-  const handleCreateOrder = async (formData: FormData) => {
+  const handleCreateOrder = async (formData: FormData, paymentMethod: string = 'COD', gcashReferenceNumber: string | null = null) => {
     if (!user) {
       alert('You must be logged in to place an order');
       return;
@@ -239,7 +239,9 @@ export default function App() {
         cartItemsWithProducts,
         shippingAddress,
         total,
-        shippingCost
+        shippingCost,
+        paymentMethod,
+        gcashReferenceNumber
       );
 
       // Store order for confirmation page
