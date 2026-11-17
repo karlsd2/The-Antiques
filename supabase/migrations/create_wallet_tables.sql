@@ -47,7 +47,7 @@ CREATE TABLE public.payout_requests (
   seller_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
   payout_account_id UUID REFERENCES public.payout_accounts(id) ON DELETE SET NULL,
   amount DECIMAL(10, 2) NOT NULL,
-  status TEXT NOT NULL DEFAULT 'Pending' CHECK (status IN ('Pending', 'Processing', 'Completed', 'Failed')),
+  status TEXT NOT NULL DEFAULT 'Pending' CHECK (status IN ('Pending', 'Approved', 'On hold', 'Rejected')),
   processed_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()) NOT NULL
 );
@@ -79,10 +79,28 @@ CREATE POLICY "Sellers can insert own transactions" ON public.wallet_transaction
 CREATE POLICY "Sellers can view own payout accounts" ON public.payout_accounts FOR SELECT USING (auth.uid() = seller_id);
 CREATE POLICY "Sellers can insert own payout accounts" ON public.payout_accounts FOR INSERT WITH CHECK (auth.uid() = seller_id);
 CREATE POLICY "Sellers can update own payout accounts" ON public.payout_accounts FOR UPDATE USING (auth.uid() = seller_id);
+CREATE POLICY "Admins can view all payout accounts" ON public.payout_accounts FOR SELECT USING (
+  EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'admin'
+  )
+);
 
 -- RLS Policies for payout_requests
 CREATE POLICY "Sellers can view own payout requests" ON public.payout_requests FOR SELECT USING (auth.uid() = seller_id);
 CREATE POLICY "Sellers can insert own payout requests" ON public.payout_requests FOR INSERT WITH CHECK (auth.uid() = seller_id);
+CREATE POLICY "Admins can view all payout requests" ON public.payout_requests FOR SELECT USING (
+  EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'admin'
+  )
+);
+CREATE POLICY "Admins can update payout request status" ON public.payout_requests FOR UPDATE USING (
+  EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'admin'
+  )
+);
 
 -- Function to create wallet transaction and update balance
 CREATE OR REPLACE FUNCTION public.create_wallet_transaction(

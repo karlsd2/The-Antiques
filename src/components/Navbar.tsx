@@ -22,8 +22,9 @@ export function Navbar({
   const logoutButtonRef = useRef<HTMLDivElement>(null);
   const buyerNav: [string, Page][] = [["Home", "home"], ["Shop", "shop"], ["Wishlist", "wishlist"], ["Messages", "messages"], ["Orders", "orders"]];
   const sellerNav: [string, Page][] = [["Dashboard", "dashboard"], ["Products", "products"], ["Messages", "messages"], ["Orders", "seller-orders"], ["Sales", "sales"], ["Wallet", "wallet"]];
+  const adminNav: [string, Page][] = [["Payouts", "admin-payouts"]];
   const guestNav: [string, Page][] = [["Shop", "shop"]];
-  const nav = isGuest ? guestNav : (role === "buyer" ? buyerNav : sellerNav);
+  const nav = isGuest ? guestNav : (role === "buyer" ? buyerNav : role === "admin" ? adminNav : sellerNav);
 
   // Close popup when clicking outside
   useEffect(() => {
@@ -58,7 +59,7 @@ export function Navbar({
   return (
     <>
       <header>
-        <button className="brand" onClick={() => onNavigate(isGuest ? "landing" : (role === "buyer" ? "home" : "dashboard"))}>
+        <button className="brand" onClick={() => onNavigate(isGuest ? "landing" : (role === "buyer" ? "home" : role === "admin" ? "admin-payouts" : "dashboard"))}>
           <span className="brand-mark">A</span>
           <span>The Antiques</span>
         </button>

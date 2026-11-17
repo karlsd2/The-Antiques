@@ -1059,6 +1059,18 @@ footer > small { position: absolute; left: clamp(24px, 6vw, 88px); bottom: 25px;
   font-size: 8px;
 }
 
+.wallet-tables-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 1024px) {
+  .wallet-tables-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .wallet-table {
   overflow-x: auto;
 }
@@ -1072,6 +1084,15 @@ footer > small { position: absolute; left: clamp(24px, 6vw, 88px); bottom: 25px;
   padding: 16px 20px;
   border-bottom: 1px solid var(--line);
   font-size: 10px;
+}
+
+.wallet-row.payout-row {
+  grid-template-columns: 1fr .8fr .7fr;
+  min-width: 400px;
+}
+
+.wallet-row.payout-row > span:last-child {
+  justify-self: center;
 }
 
 .wallet-row-head {
@@ -1126,6 +1147,21 @@ footer > small { position: absolute; left: clamp(24px, 6vw, 88px); bottom: 25px;
 .wallet-status.pending {
   background: var(--peach-light);
   color: #794921;
+}
+
+.wallet-status.on-hold {
+  background: var(--peach-light);
+  color: #794921;
+}
+
+.wallet-status.processed {
+  background: #e4eadf;
+  color: var(--sage);
+}
+
+.wallet-status.failed {
+  background: #f4e4e1;
+  color: var(--red);
 }
 
 .payout-modal {
@@ -1200,6 +1236,345 @@ footer > small { position: absolute; left: clamp(24px, 6vw, 88px); bottom: 25px;
 
 .payout-destination strong {
   font-size: 10px;
+}
+
+/* Admin Payouts Styles */
+.admin-payout-stats {
+  display: grid;
+  grid-template-columns: 1.4fr repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.admin-payout-stats > div {
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 24px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.admin-payout-stats small {
+  color: var(--ink-soft);
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+}
+
+.admin-payout-stats strong {
+  display: block;
+  margin: 10px 0 4px;
+  font: 500 29px "Playfair Display", serif;
+}
+
+.admin-payout-stats > div > span {
+  color: var(--sage);
+  font-size: 8px;
+}
+
+.admin-payout-stats .admin-payout-hero {
+  position: relative;
+  overflow: hidden;
+  background: var(--ink);
+  color: white;
+}
+
+.admin-payout-hero:after {
+  content: "";
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  right: -45px;
+  top: -55px;
+  border: 1px solid #5e5049;
+  border-radius: 50%;
+}
+
+.admin-payout-hero > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--peach) !important;
+  font-size: 9px !important;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+}
+
+.admin-payout-hero strong {
+  font-size: 36px;
+}
+
+.admin-payout-hero p {
+  margin: 0;
+  color: #b9aca5;
+  font-size: 9px;
+}
+
+.admin-payout-tools .search-field {
+  width: 270px;
+}
+
+.admin-payout-table {
+  overflow-x: auto;
+}
+
+.admin-payout-row {
+  min-width: 970px;
+  display: grid;
+  grid-template-columns: 1.35fr 1.1fr .6fr .7fr .65fr .5fr;
+  align-items: center;
+  gap: 16px;
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--line);
+  font-size: 10px;
+}
+
+.admin-payout-head {
+  background: var(--cream);
+  color: var(--ink-soft);
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+}
+
+.admin-seller {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.admin-seller > span {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  border-radius: 50%;
+  background: var(--peach-light);
+  font: 500 11px "Playfair Display", serif;
+}
+
+.admin-seller strong,
+.admin-seller small {
+  display: block;
+}
+
+.admin-seller small {
+  margin-top: 3px;
+  color: var(--ink-soft);
+  font-size: 8px;
+}
+
+.admin-payout-row > b {
+  justify-self: end;
+  font: 600 11px "DM Sans", sans-serif;
+}
+
+.admin-payout-row > button {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: none;
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+}
+
+.risk-label {
+  width: max-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: 20px;
+  background: #e4eadf;
+  color: var(--sage);
+  font-size: 7px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.risk-label.review {
+  background: var(--peach-light);
+  color: #794921;
+}
+
+.risk-label.high {
+  background: #f4e4e1;
+  color: var(--red);
+}
+
+.admin-payout-empty {
+  padding: 55px 20px;
+  color: var(--ink-soft);
+  text-align: center;
+  font-size: 11px;
+}
+
+/* Review Modal */
+.admin-review-modal {
+  width: min(680px, 100%);
+}
+
+.review-amount {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  margin: 25px 0;
+  padding: 22px;
+  background: var(--ink);
+  color: white;
+}
+
+.review-amount small,
+.review-amount strong {
+  display: block;
+}
+
+.review-amount small {
+  color: #b9aca5;
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: .09em;
+}
+
+.review-amount strong {
+  margin-top: 7px;
+  font: 500 35px "Playfair Display", serif;
+}
+
+.review-amount > span {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  align-self: center;
+}
+
+.review-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+
+.review-grid > div {
+  padding: 17px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.review-grid small,
+.review-grid strong {
+  display: block;
+}
+
+.review-grid small {
+  margin-bottom: 6px;
+  color: var(--ink-soft);
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.review-grid strong {
+  font-size: 10px;
+}
+
+.review-risk.low {
+  color: var(--sage);
+}
+
+.review-risk.review {
+  color: #794921;
+}
+
+.review-risk.high {
+  color: var(--red);
+}
+
+.review-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin: 20px 0;
+  color: var(--sage);
+  font-size: 9px;
+}
+
+.review-checks span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.review-note {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: var(--ink-soft);
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.review-note textarea {
+  min-height: 70px;
+  padding: 11px;
+  border: 1px solid var(--line);
+  outline: 0;
+  resize: vertical;
+  background: var(--paper);
+  font-size: 10px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.admin-review-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 22px;
+}
+
+.button.danger-outline {
+  border-color: var(--red);
+  background: transparent;
+  color: var(--red);
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 1050px) {
+  .admin-payout-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-payout-stats {
+    grid-template-columns: 1fr;
+  }
+  .admin-payout-tools .tab-buttons {
+    width: 100%;
+    overflow-x: auto;
+  }
+  .admin-payout-tools .tab-buttons button {
+    flex: none;
+  }
+  .admin-payout-tools .search-field {
+    width: 100%;
+  }
+  .review-grid {
+    grid-template-columns: 1fr;
+  }
+  .admin-review-actions {
+    flex-direction: column-reverse;
+  }
+  .admin-review-actions .button {
+    width: 100%;
+  }
 }
 
 /* Responsive breakpoints for Wallet */

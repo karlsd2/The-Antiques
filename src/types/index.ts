@@ -2,10 +2,7 @@
 export * from './database';
 
 // Re-export auth types
-export type { UserRole, Profile } from '../hooks/useAuth';
-
-// Local types from App.tsx
-export type Role = "buyer" | "seller";
+export type { UserRole as Role, Profile } from '../hooks/useAuth';
 
 export type Page =
   | "landing"
@@ -26,6 +23,7 @@ export type Page =
   | "seller-profile"
   | "seller-shop"
   | "wallet"
+  | "admin-payouts"
   | "login"
   | "register"
   | "forgot";

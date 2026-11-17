@@ -19,7 +19,7 @@ export interface WalletTransaction {
   description: string
   type: 'Sale' | 'Fee' | 'Payout' | 'Refund'
   amount: number
-  status: 'Available' | 'Pending' | 'Processed' | 'Completed' | 'Failed'
+  status: 'Available' | 'Pending' | 'Processed' | 'Completed' | 'Failed' | 'On hold'
   order_id: string | null
   order_item_id: string | null
   created_at: string
@@ -43,7 +43,7 @@ export interface PayoutRequest {
   seller_id: string
   payout_account_id: string | null
   amount: number
-  status: 'Pending' | 'Processing' | 'Completed' | 'Failed'
+  status: 'Pending' | 'Approved' | 'On hold' | 'Rejected'
   processed_at: string | null
   created_at: string
 }
@@ -52,6 +52,7 @@ export function useWallet(sellerId: string | null) {
   const [balance, setBalance] = useState<SellerBalance | null>(null)
   const [transactions, setTransactions] = useState<WalletTransaction[]>([])
   const [payoutAccount, setPayoutAccount] = useState<PayoutAccount | null>(null)
+  const [payoutRequests, setPayoutRequests] = useState<PayoutRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
@@ -62,6 +63,7 @@ export function useWallet(sellerId: string | null) {
       setBalance(null)
       setTransactions([])
       setPayoutAccount(null)
+      setPayoutRequests([])
       setLoading(false)
     }
   }, [sellerId])
@@ -117,6 +119,16 @@ export function useWallet(sellerId: string | null) {
       }
 
       setPayoutAccount(accountData || null)
+
+      // Fetch payout requests
+      const { data: payoutRequestsData, error: payoutRequestsError } = await supabase
+        .from('payout_requests')
+        .select('*')
+        .eq('seller_id', sellerId)
+        .order('created_at', { ascending: false })
+
+      if (payoutRequestsError) throw payoutRequestsError
+      setPayoutRequests(payoutRequestsData || [])
     } catch (err) {
       setError(err as Error)
       console.error('Error fetching wallet data:', err)
@@ -135,20 +147,30 @@ export function useWallet(sellerId: string | null) {
     }
 
     try {
-      // Create payout request with status 'Completed' to trigger the payout transaction
+      // Create payout request with status 'Pending' for admin review
       const { data: payoutData, error: payoutError } = await supabase
         .from('payout_requests')
         .insert({
           seller_id: sellerId,
           payout_account_id: payoutAccount.id,
           amount: amount,
-          status: 'Completed',
-          processed_at: new Date().toISOString()
+          status: 'Pending'
         })
         .select()
         .single()
 
       if (payoutError) throw payoutError
+
+      // Create a pending wallet transaction for visibility
+      const transactionId = 'PAY-' + Date.now().toString()
+      await supabase.rpc('create_wallet_transaction', {
+        p_seller_id: sellerId,
+        p_transaction_id: transactionId,
+        p_description: `Payout to ${payoutAccount.bank_name || payoutAccount.account_type} ···· ${payoutAccount.account_number_last4 || 'N/A'}`,
+        p_type: 'Payout',
+        p_amount: -amount,
+        p_status: 'Pending'
+      })
 
       // Refresh wallet data
       await fetchWalletData()
@@ -164,6 +186,7 @@ export function useWallet(sellerId: string | null) {
     balance,
     transactions,
     payoutAccount,
+    payoutRequests,
     loading,
     error,
     requestPayout,

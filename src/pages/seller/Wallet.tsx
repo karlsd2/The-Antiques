@@ -9,10 +9,11 @@ import { supabase } from "../../lib/supabase";
 
 export function Wallet() {
   const { user } = useAuth();
-  const { balance, transactions, payoutAccount, loading, requestPayout: requestPayoutApi, refetch } = useWallet(user?.id || null);
+  const { balance, transactions, payoutAccount, payoutRequests, loading, requestPayout: requestPayoutApi, refetch } = useWallet(user?.id || null);
   const [showPayout, setShowPayout] = useState(false);
   const [showAddAccount, setShowAddAccount] = useState(false);
   const [showAllTransactions, setShowAllTransactions] = useState(false);
+  const [showAllPayoutRequests, setShowAllPayoutRequests] = useState(false);
   const [amount, setAmount] = useState(balance?.available_balance?.toFixed(2) || "0.00");
   const [notice, setNotice] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -246,58 +247,103 @@ export function Wallet() {
         )}
       </div>
 
-      <section className="table-card wallet-transactions">
-        <div className="panel-heading">
-          <div>
-            <h2>Recent transactions</h2>
-            <span>All wallet activity</span>
+      <div className="wallet-tables-grid">
+        <section className="table-card wallet-transactions">
+          <div className="panel-heading">
+            <div>
+              <h2>Recent transactions</h2>
+              <span>All wallet activity</span>
+            </div>
+            <button
+              className="text-link"
+              onClick={() => setShowAllTransactions((current) => !current)}
+            >
+              {showAllTransactions ? "Show recent" : "View all"}{" "}
+              <Icon name="arrow" size={15} />
+            </button>
           </div>
-          <button
-            className="text-link"
-            onClick={() => setShowAllTransactions((current) => !current)}
-          >
-            {showAllTransactions ? "Show recent" : "View all"}{" "}
-            <Icon name="arrow" size={15} />
-          </button>
-        </div>
 
-        <div className="wallet-table">
-          <div className="wallet-row wallet-row-head">
-            <span>Transaction</span>
-            <span>Date</span>
-            <span>Type</span>
-            <span>Status</span>
-            <span>Amount</span>
-          </div>
-          {loading ? (
-            <div className="wallet-row"><SkeletonText lines={4} /></div>
-          ) : transactions.length === 0 ? (
-            <div className="wallet-row"><span>No transactions yet. Transactions will appear when orders are delivered.</span></div>
-          ) : (
-            transactions
-              .slice(0, showAllTransactions ? transactions.length : 4)
-              .map((transaction) => (
-                <div className="wallet-row" key={transaction.id}>
-                  <div>
-                    <strong>{transaction.description}</strong>
-                    <small>{transaction.transaction_id}</small>
+          <div className="wallet-table">
+            <div className="wallet-row wallet-row-head">
+              <span>Transaction</span>
+              <span>Date</span>
+              <span>Type</span>
+              <span>Status</span>
+              <span>Amount</span>
+            </div>
+            {loading ? (
+              <div className="wallet-row"><SkeletonText lines={4} /></div>
+            ) : transactions.length === 0 ? (
+              <div className="wallet-row"><span>No transactions yet. Transactions will appear when orders are delivered.</span></div>
+            ) : (
+              transactions
+                .slice(0, showAllTransactions ? transactions.length : 4)
+                .map((transaction) => (
+                  <div className="wallet-row" key={transaction.id}>
+                    <div>
+                      <strong>{transaction.description}</strong>
+                      <small>{transaction.transaction_id}</small>
+                    </div>
+                    <span>{new Date(transaction.created_at).toLocaleDateString()}</span>
+                    <span>{transaction.type}</span>
+                    <span>
+                      <i className={`wallet-status ${transaction.status.toLowerCase().replace(" ", "-")}`}>
+                        {transaction.status}
+                      </i>
+                    </span>
+                    <b className={transaction.amount > 0 ? "positive" : ""}>
+                      {transaction.amount > 0 ? "+" : "−"}
+                      {money(Math.abs(transaction.amount))}
+                    </b>
                   </div>
-                  <span>{new Date(transaction.created_at).toLocaleDateString()}</span>
-                  <span>{transaction.type}</span>
-                  <span>
-                    <i className={`wallet-status ${transaction.status.toLowerCase()}`}>
-                      {transaction.status}
-                    </i>
-                  </span>
-                  <b className={transaction.amount > 0 ? "positive" : ""}>
-                    {transaction.amount > 0 ? "+" : "−"}
-                    {money(Math.abs(transaction.amount))}
-                  </b>
-                </div>
-              ))
-          )}
-        </div>
-      </section>
+                ))
+            )}
+          </div>
+        </section>
+
+        <section className="table-card wallet-transactions">
+          <div className="panel-heading">
+            <div>
+              <h2>Payout requests</h2>
+              <span>Your withdrawal history</span>
+            </div>
+            <button
+              className="text-link"
+              onClick={() => setShowAllPayoutRequests((current) => !current)}
+            >
+              {showAllPayoutRequests ? "Show recent" : "View all"}{" "}
+              <Icon name="arrow" size={15} />
+            </button>
+          </div>
+
+          <div className="wallet-table">
+            <div className="wallet-row wallet-row-head payout-row">
+              <span>Amount</span>
+              <span>Requested</span>
+              <span>Status</span>
+            </div>
+            {loading ? (
+              <div className="wallet-row payout-row"><SkeletonText lines={4} /></div>
+            ) : payoutRequests.length === 0 ? (
+              <div className="wallet-row payout-row"><span>No payout requests yet.</span></div>
+            ) : (
+              payoutRequests
+                .slice(0, showAllPayoutRequests ? payoutRequests.length : 4)
+                .map((request) => (
+                  <div className="wallet-row payout-row" key={request.id}>
+                    <strong>{money(request.amount)}</strong>
+                    <span>{new Date(request.created_at).toLocaleDateString()}</span>
+                    <span>
+                      <i className={`wallet-status ${request.status.toLowerCase().replace(" ", "-")}`}>
+                        {request.status}
+                      </i>
+                    </span>
+                  </div>
+                ))
+            )}
+          </div>
+        </section>
+      </div>
 
       {showPayout && (
         <div className="modal-backdrop" onClick={() => setShowPayout(false)}>

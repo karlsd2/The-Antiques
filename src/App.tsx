@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { useAuth, type Profile } from "./hooks/useAuth";
+import { useAuth, type Profile, type Role } from "./hooks/useAuth";
 import { useProducts, useCategories } from "./hooks/useProducts";
 import { useWishlist } from "./hooks/useWishlist";
 import { useCart } from "./hooks/useCart";
 import { useOrders } from "./hooks/useOrders";
 import { Navbar } from "./components/Navbar";
-import type { Page, Role } from "./types";
+import type { Page } from "./types";
 import type { Product } from "./types";
 
 // Page imports
@@ -28,11 +28,13 @@ import { Sales } from "./pages/seller/Sales";
 import { SellerProfile } from "./pages/seller/SellerProfile";
 import { SellerShop } from "./pages/SellerShop";
 import { Wallet } from "./pages/seller/Wallet";
+import { AdminPayouts } from "./pages/admin/AdminPayouts";
 
 // Page sets for role-based access control (defined outside component to avoid recreation)
 const publicPages: Set<Page> = new Set(["landing", "shop", "product", "login", "register", "forgot"]);
 const buyerPages: Set<Page> = new Set(["home", "shop", "product", "wishlist", "cart", "checkout", "confirmation", "orders", "profile", "messages", "seller-shop"]);
 const sellerPages: Set<Page> = new Set(["dashboard", "products", "messages", "seller-orders", "sales", "seller-profile", "wallet"]);
+const adminPages: Set<Page> = new Set(["admin-payouts"]);
 const authPages: Set<Page> = new Set(["login", "register", "forgot"]);
 
 export default function App() {
@@ -51,7 +53,7 @@ export default function App() {
       if (user && profile) {
         // Authenticated user: if on auth/landing pages, redirect to role-appropriate home
         if (page === "login" || page === "register" || page === "forgot" || page === "landing") {
-          const initialPage = profile.role === 'seller' ? 'dashboard' : 'home';
+          const initialPage = profile.role === 'seller' ? 'dashboard' : profile.role === 'admin' ? 'admin-payouts' : 'home';
           setPage(initialPage);
         }
       } else {
@@ -100,6 +102,12 @@ export default function App() {
       if (role === "seller" && !sellerPages.has(destination)) {
         // Seller trying to access buyer page - redirect to seller dashboard
         setPage("dashboard");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+      if (role === "admin" && !adminPages.has(destination)) {
+        // Admin trying to access other pages - redirect to admin payouts
+        setPage("admin-payouts");
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
@@ -339,6 +347,8 @@ export default function App() {
     content = selectedSellerId ? <SellerShop navigate={navigate} sellerId={selectedSellerId} favorites={wishlist} toggleFavorite={toggleFavorite} /> : null;
   } else if (page === "wallet") {
     content = <Wallet />;
+  } else if (page === "admin-payouts") {
+    content = <AdminPayouts />;
   } else {
     content = <Auth mode={page as "login" | "register" | "forgot"} navigate={navigate} onLogin={handleLogin} />;
   }
