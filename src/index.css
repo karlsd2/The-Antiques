@@ -1082,6 +1082,10 @@ footer > small { position: absolute; left: clamp(24px, 6vw, 88px); bottom: 25px;
   letter-spacing: .09em;
 }
 
+.wallet-row-head > span:last-child {
+  text-align: right;
+}
+
 .wallet-row > div strong,
 .wallet-row > div small {
   display: block;

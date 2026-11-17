@@ -5,10 +5,12 @@ import { money } from '../../lib/utils';
 import type { Product } from '../../types';
 import { useAuth } from '../../hooks/useAuth';
 import { useOrders } from '../../hooks/useOrders';
+import { useWallet } from '../../hooks/useWallet';
 
 export function Sales({ products }: { products: Product[] }) {
   const { user } = useAuth();
   const { orders, loading } = useOrders(user?.id || null, true);
+  const { balance, transactions, loading: walletLoading } = useWallet(user?.id || null);
 
   // Calculate metrics from actual order data
   const totalOrders = orders.length;
@@ -20,9 +22,9 @@ export function Sales({ products }: { products: Product[] }) {
     return sum + (order.items?.reduce((itemSum, item) => itemSum + (item.price * item.quantity), 0) || 0);
   }, 0);
 
-  // Assuming 10% marketplace fee for net earnings
-  const marketplaceFee = grossSales * 0.10;
-  const netEarnings = grossSales - marketplaceFee;
+  // Use wallet balance for real earnings data
+  const netEarnings = balance?.lifetime_earnings || 0;
+  const marketplaceFee = grossSales - netEarnings;
 
   const averageOrder = totalOrders > 0 ? grossSales / totalOrders : 0;
 
@@ -31,13 +33,15 @@ export function Sales({ products }: { products: Product[] }) {
   const activeProducts = products.filter(p => p.status === 'active').length;
   const conversionRate = activeProducts > 0 ? (totalOrders / activeProducts) * 100 : 0;
 
-  // Calculate monthly sales data
+  // Calculate monthly sales data from wallet transactions
   const monthlySales = Array(12).fill(0).map((_, monthIndex) => {
     const currentYear = new Date().getFullYear();
-    return orders.reduce((sum, order) => {
-      const orderDate = new Date(order.created_at);
-      if (orderDate.getFullYear() === currentYear && orderDate.getMonth() === monthIndex) {
-        return sum + (order.items?.reduce((itemSum, item) => itemSum + (item.price * item.quantity), 0) || 0);
+    return transactions.reduce((sum, transaction) => {
+      if (transaction.type === 'Sale') {
+        const transactionDate = new Date(transaction.created_at);
+        if (transactionDate.getFullYear() === currentYear && transactionDate.getMonth() === monthIndex) {
+          return sum + transaction.amount;
+        }
       }
       return sum;
     }, 0);
@@ -72,7 +76,7 @@ export function Sales({ products }: { products: Product[] }) {
         <select><option>Last 6 months</option><option>This year</option></select>
       </div>
       <div className="stats-grid">
-        {loading ? (
+        {loading || walletLoading ? (
           <SkeletonStat count={4} />
         ) : (
           <>
