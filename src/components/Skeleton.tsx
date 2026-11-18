@@ -112,3 +112,26 @@ export function SkeletonCartItem({ count = 1 }: { count?: number }) {
     </>
   );
 }
+
+export function SkeletonAdminPayoutRow({ count = 1 }: { count?: number }) {
+  return (
+    <>
+      {Array.from({ length: count }).map((_, i) => (
+        <div className="admin-payout-row skeleton-row" key={i}>
+          <div className="admin-seller">
+            <div className="skeleton-text" style={{ width: '30px', height: '30px', borderRadius: '50%', marginBottom: '0' }} />
+            <div>
+              <div className="skeleton-text" style={{ height: '10px', width: '60%', marginBottom: '4px' }} />
+              <div className="skeleton-text" style={{ height: '8px', width: '40%' }} />
+            </div>
+          </div>
+          <div className="skeleton-text" style={{ height: '10px', width: '70%' }} />
+          <div className="skeleton-text" style={{ height: '10px', width: '40%' }} />
+          <div className="skeleton-text" style={{ height: '10px', width: '50%' }} />
+          <div className="skeleton-text" style={{ height: '10px', width: '40%' }} />
+          <div className="skeleton-text" style={{ height: '10px', width: '60%' }} />
+        </div>
+      ))}
+    </>
+  );
+}

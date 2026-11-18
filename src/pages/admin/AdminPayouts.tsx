@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Icon } from "../../components/Icon";
+import { SkeletonAdminPayoutRow } from "../../components/Skeleton";
 import { money } from "../../lib/utils";
 import { useAdminPayouts, type AdminPayout, type PayoutStatus } from "../../hooks/useAdminPayouts";
 
@@ -143,7 +144,7 @@ export function AdminPayouts() {
             <span></span>
           </div>
           {loading ? (
-            <div className="admin-payout-row"><span>Loading payouts...</span></div>
+            <SkeletonAdminPayoutRow count={itemsPerPage} />
           ) : visiblePayouts.length === 0 ? (
             <div className="admin-payout-empty">No payout requests match this view.</div>
           ) : (
