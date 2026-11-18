@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Icon } from "../../components/Icon";
 import { money } from "../../lib/utils";
 import { useAdminPayouts, type AdminPayout, type PayoutStatus } from "../../hooks/useAdminPayouts";
@@ -9,6 +9,8 @@ export function AdminPayouts() {
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const selected = payouts.find((payout) => payout.id === selectedId);
   const visiblePayouts = payouts.filter(
@@ -16,6 +18,16 @@ export function AdminPayouts() {
       (filter === "All" || payout.status === filter) &&
       `${payout.seller} ${payout.id}`.toLowerCase().includes(search.toLowerCase())
   );
+
+  const totalPages = Math.ceil(visiblePayouts.length / itemsPerPage);
+  const paginatedPayouts = visiblePayouts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter, search]);
   const pendingTotal = payouts
     .filter((payout) => payout.status === "Pending")
     .reduce((sum, payout) => sum + payout.amount, 0);
@@ -135,7 +147,7 @@ export function AdminPayouts() {
           ) : visiblePayouts.length === 0 ? (
             <div className="admin-payout-empty">No payout requests match this view.</div>
           ) : (
-            visiblePayouts.map((payout) => (
+            paginatedPayouts.map((payout) => (
               <div className="admin-payout-row" key={payout.id}>
                 <div className="admin-seller">
                   <span>{payout.initials}</span>
@@ -162,6 +174,30 @@ export function AdminPayouts() {
             ))
           )}
         </div>
+
+        {totalPages > 1 && (
+          <div className="pagination">
+            <button
+              className="pagination-button"
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+            >
+              <Icon name="chevron" size={14} />
+              Previous
+            </button>
+            <div className="pagination-info">
+              Page {currentPage} of {totalPages}
+            </div>
+            <button
+              className="pagination-button"
+              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+              <Icon name="chevron" size={14} />
+            </button>
+          </div>
+        )}
       </section>
 
       {selected && (
